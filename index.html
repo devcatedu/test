@@ -32,12 +32,11 @@ html,body{
 #viewport-outer{
   position:fixed; inset:0;
   width:100vw; height:100vh; height:100dvh;
-  display:flex; align-items:center; justify-content:center;
   background: radial-gradient(circle at 50% 20%, #1a2036 0%, #05060b 75%);
   overflow:hidden;
 }
 #stage{
-  position:relative;
+  position:absolute; left:50%; top:50%;
   width:750px; height:1334px;
   transform-origin: center center;
   background: linear-gradient(180deg,#2a3358 0%, #171b2c 55%, #0c0e18 100%);
@@ -223,7 +222,19 @@ html,body{
 @keyframes char-lose-droop{ 0%,100%{ transform:translateY(4px) rotate(3deg);} 50%{ transform:translateY(8px) rotate(-2deg);} }
 @keyframes char-lose-droop-flip{ 0%,100%{ transform:scaleX(-1) translateY(4px) rotate(-3deg);} 50%{ transform:scaleX(-1) translateY(8px) rotate(2deg);} }
 .char-name{ font-size:13px; font-weight:800; color:#fff; margin-top:2px;}
-.char-score{ font-size:16px; font-weight:900; color:#ffd27a; }
+.char-score-label{ font-size:10px; color:#9fb0ff; font-weight:700; margin-top:3px; letter-spacing:.5px;}
+.char-score{ font-size:16px; font-weight:900; color:#ffd27a; transition: transform .25s ease; }
+.char-score.bump{ animation: char-score-bump .5s ease; }
+@keyframes char-score-bump{ 0%{transform:scale(1);} 40%{transform:scale(1.35); color:#fff;} 100%{transform:scale(1);} }
+.turn-score-popup{
+  position:absolute; top:-6px; left:50%; transform:translate(-50%,0) scale(0);
+  font-weight:900; color:#fff; text-shadow:0 2px 6px rgba(0,0,0,.5); white-space:nowrap;
+  font-size:15px; opacity:0; transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .2s ease, font-size .3s ease;
+  z-index:16; pointer-events:none;
+}
+.turn-score-popup.show{ opacity:1; transform:translate(-50%,0) scale(1); }
+.turn-score-popup.fly-left{ transition: transform .7s cubic-bezier(.5,0,.75,1), opacity .55s ease .3s; transform: translate(calc(-50% - 250px), 30px) scale(.55); opacity:0; }
+.turn-score-popup.fly-right{ transition: transform .7s cubic-bezier(.5,0,.75,1), opacity .55s ease .3s; transform: translate(calc(-50% + 250px), 30px) scale(.55); opacity:0; }
 .speech-bubble{
   position:absolute; top:-6px; left:50%; transform:translate(-50%,-100%) scale(.85);
   background:#fff; color:#2c1c04; font-size:12px; font-weight:800; padding:6px 10px; border-radius:12px;
@@ -458,9 +469,11 @@ html,body{
           <div class="speech-bubble" id="mySpeech"></div>
           <div class="char-stage-figure left" id="myCharFigure"><img id="myCharImg" alt="내 캐릭터"></div>
           <div class="char-name" id="myCharName">나</div>
-          <div class="char-score" id="myTurnScore">0</div>
+          <div class="char-score-label">누적 점수</div>
+          <div class="char-score" id="myTotalScoreDisp">0</div>
         </div>
         <div class="food-bowl-wrap">
+          <div class="turn-score-popup" id="turnScorePopup">0</div>
           <div class="food-bowl" id="foodBowl">🍮</div>
           <div class="target-score-label">남은 목표점수</div>
           <div class="target-score-num" id="targetScoreNum">1,000,000</div>
@@ -470,7 +483,8 @@ html,body{
           <div class="speech-bubble" id="opSpeech"></div>
           <div class="char-stage-figure right" id="opCharFigure"><img id="opCharImg" alt="상대 캐릭터"></div>
           <div class="char-name" id="opCharName">상대</div>
-          <div class="char-score" id="opTurnScore">0</div>
+          <div class="char-score-label">누적 점수</div>
+          <div class="char-score" id="opTotalScoreDisp">0</div>
         </div>
       </div>
       <div class="reshuffle-banner" id="reshuffleBanner">가능한 매치가 없어 블록을 다시 섞습니다...</div>
@@ -656,14 +670,16 @@ function fitStage(){
   // 모바일에서 키보드가 열려있는 동안은 visualViewport/innerHeight가 줄어들어
   // 게임 전체가 같이 축소되어 보이는 문제가 있었음 -> 입력 중에는 재계산을 건너뛴다.
   if(isTypingNow() && lastGoodScale){ return; }
-  const vw = document.documentElement.clientWidth || window.innerWidth;
-  const vh = document.documentElement.clientHeight || window.innerHeight;
+  // 여러 측정치 중 더 작은(=더 신뢰할 수 있는, 브라우저 chrome이 반영된) 값을 사용해
+  // 레이아웃 뷰포트가 실제 화면보다 크게 잡히는 기기에서도 좌우/상하가 잘리지 않도록 한다.
+  const widths = [document.documentElement.clientWidth, window.innerWidth].filter(v=>v>0);
+  const heights = [document.documentElement.clientHeight, window.innerHeight].filter(v=>v>0);
+  const vw = widths.length ? Math.min(...widths) : 0;
+  const vh = heights.length ? Math.min(...heights) : 0;
   if(!vw || !vh) return;
   const scale = Math.min(vw/750, vh/1334);
   lastGoodScale = scale;
-  stage.style.transform = `scale(${scale})`;
-  viewportOuter.style.width = vw+'px';
-  viewportOuter.style.height = vh+'px';
+  stage.style.transform = `translate(-50%,-50%) scale(${scale})`;
 }
 window.addEventListener('resize', fitStage);
 window.addEventListener('orientationchange', ()=> setTimeout(fitStage,50));
@@ -672,8 +688,16 @@ document.addEventListener('DOMContentLoaded', fitStage);
 // 입력창에서 포커스가 빠지면(키보드가 닫히면) 다시 정확히 맞춘다
 document.addEventListener('focusout', (e)=>{ if(e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')) setTimeout(fitStage, 150); });
 fitStage();
-setTimeout(fitStage, 100);
-setTimeout(fitStage, 500);
+setTimeout(fitStage, 50);
+setTimeout(fitStage, 150);
+setTimeout(fitStage, 300);
+setTimeout(fitStage, 600);
+setTimeout(fitStage, 1200);
+if(window.ResizeObserver){
+  try{
+    new ResizeObserver(()=>{ if(!isTypingNow()) fitStage(); }).observe(viewportOuter);
+  }catch(e){}
+}
 
 /* ============================================================
    1. 씬 전환 관리
@@ -924,10 +948,11 @@ const timerFill = document.getElementById('timerFill');
 const dots = [document.getElementById('dot1'), document.getElementById('dot2'), document.getElementById('dot3')];
 const turnLabel = document.getElementById('turnLabel');
 const roundNumEl = document.getElementById('roundNum');
-const myTurnScoreEl = document.getElementById('myTurnScore');
-const opTurnScoreEl = document.getElementById('opTurnScore');
+const myTotalScoreEl = document.getElementById('myTotalScoreDisp');
+const opTotalScoreEl = document.getElementById('opTotalScoreDisp');
 const targetScoreNumEl = document.getElementById('targetScoreNum');
 const targetBarFillEl = document.getElementById('targetBarFill');
+const turnScorePopupEl = document.getElementById('turnScorePopup');
 const mySpeechEl = document.getElementById('mySpeech');
 const opSpeechEl = document.getElementById('opSpeech');
 
@@ -978,11 +1003,54 @@ let game = {
 
 function px(i){ return i*CELL; }
 
+// 브라우저 탭/창이 백그라운드로 갔다가 돌아오면 CSS 트랜지션/타이머가 중간에 멈춰
+// 블록이 빈칸처럼 보이는 버그가 있었음 -> 화면이 다시 보일 때 위치/내용을 강제로 재동기화한다.
+function resyncBoardVisuals(){
+  if(!grid || !boardEl.isConnected) return;
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const cell = grid[r][c];
+      if(!cell || !cell.el){
+        // 어떤 이유로든 빈칸이 되어있다면 새 블록으로 채운다 (게임 도중 정상적으로는 발생하지 않아야 함)
+        if(!game.busy && !game.ended){
+          const t = randomBlockType();
+          const nb = createBlockEl(r,c,t,false,false);
+          grid[r][c] = nb;
+        }
+        continue;
+      }
+      // 트랜지션이 중간에 멈춰 실제 좌표와 어긋난 경우를 대비해 즉시 정위치로 스냅
+      cell.el.style.transition = 'none';
+      cell.el.style.left = px(cell.c)+'px';
+      cell.el.style.top = px(cell.r)+'px';
+      cell.el.style.opacity = '';
+      // eslint-disable-next-line no-unused-expressions
+      cell.el.offsetHeight; // reflow
+      cell.el.style.transition = '';
+    }
+  }
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden) setTimeout(resyncBoardVisuals, 60);
+});
+window.addEventListener('focus', ()=> setTimeout(resyncBoardVisuals, 60));
+
 function updateScoreHUD(){
-  myTurnScoreEl.textContent = game.myTurnScore.toLocaleString();
-  opTurnScoreEl.textContent = game.opTurnScore.toLocaleString();
+  myTotalScoreEl.textContent = game.myTotalScore.toLocaleString();
+  opTotalScoreEl.textContent = game.opTotalScore.toLocaleString();
   targetScoreNumEl.textContent = Math.max(0,game.targetScore).toLocaleString();
   targetBarFillEl.style.width = Math.max(0, Math.min(100, game.targetScore/TARGET_SCORE_MAX*100))+'%';
+}
+// 젤리(목표점수) 위에 현재 턴 동안 쌓인 점수를 점점 커지게 표시 (요청1)
+function updateTurnScorePopup(){
+  const cur = game.turn==='me' ? game.myTurnScore : game.opTurnScore;
+  turnScorePopupEl.textContent = '+'+cur.toLocaleString();
+  const size = Math.min(30, 15 + Math.floor(cur/2000));
+  turnScorePopupEl.style.fontSize = size+'px';
+  turnScorePopupEl.style.color = cur>=5000 ? '#ffd23a' : '#fff';
+  turnScorePopupEl.classList.add('show');
+  turnScorePopupEl.classList.remove('flying');
+  turnScorePopupEl.style.left='50%'; turnScorePopupEl.style.top='-6px';
 }
 
 async function initGame(){
@@ -993,6 +1061,9 @@ async function initGame(){
   document.getElementById('myCharFigure').className = 'char-stage-figure left idle';
   document.getElementById('opCharFigure').className = 'char-stage-figure right idle';
   updateScoreHUD();
+  turnScorePopupEl.classList.remove('show','fly-left','fly-right');
+  turnScorePopupEl.style.transform = 'translate(-50%,0) scale(0)';
+  turnScorePopupEl.textContent='+0';
   roundNumEl.textContent='1';
   updateMoveDots();
   startCharChatter();
@@ -1107,6 +1178,7 @@ function handleTapCell(r,c){
   lastTapCell = null;
   game.busy = true;
   game.lastUserActionTile = {r,c};
+  claimedTrackerTargets.clear();
   activateItem(r,c, cell.type, 'tap').then(()=>{
     consumeMoveAndContinue();
   });
@@ -1119,6 +1191,7 @@ function attemptSwap(r1,c1,r2,c2){
   if(!a||!b) return;
   game.busy = true;
   game.lastUserActionTile = {r:r2,c:c2};
+  claimedTrackerTargets.clear();
 
   // 아이템끼리 스왑 -> 조합 발동
   if(a.isItem && b.isItem){
@@ -1128,16 +1201,20 @@ function attemptSwap(r1,c1,r2,c2){
     });
     return;
   }
-  // 아이템 + 일반블록 드래그 -> 스왑 애니메이션이 눈에 보이도록 한 뒤, 매치가 발생하면 매치를 먼저 완전히 처리하고,
-  // 잠시 여백을 두고 나서 아이템을 발동한다 (요청: 옮기자마자 바로 처리되어 인지 불가능한 문제 개선)
+  // 아이템 + 일반블록 드래그 -> 스왑 애니메이션이 눈에 보이도록 한 뒤, 매치가 발생하면 매치부터 "낙하 없이" 소멸시키고,
+  // 잠시 여백을 두고 아이템을 발동(역시 낙하 없이)한 다음, 모든 처리가 끝난 후 한번에 낙하시킨다 (요청2)
   if(a.isItem && !b.isItem){
     swapCells(r1,c1,r2,c2, false).then(async ()=>{
       const itemCell = grid[r2][c2]; // 스왑된 아이템 셀 참조 (이후 낙하로 위치가 바뀌어도 항상 최신 좌표 유지)
       await wait(280);
       const sets = findMatchSets();
-      if(sets.length>0) await processMatches(sets, {r:r1,c:c1});
+      if(sets.length>0){ const sc = await clearMatchSetsNoDrop(sets, {r:r1,c:c1}); if(sc>0) applyScore(sc); }
       await wait(320);
-      await activateItem(itemCell.r, itemCell.c, itemCell.type, 'drag');
+      await activateItem(itemCell.r, itemCell.c, itemCell.type, 'drag', true);
+      await wait(200);
+      await dropAndRefill();
+      const sets2 = findMatchSets();
+      if(sets2.length>0) await processMatches(sets2, null);
       consumeMoveAndContinue();
     });
     return;
@@ -1147,9 +1224,13 @@ function attemptSwap(r1,c1,r2,c2){
       const itemCell = grid[r1][c1];
       await wait(280);
       const sets = findMatchSets();
-      if(sets.length>0) await processMatches(sets, {r:r2,c:c2});
+      if(sets.length>0){ const sc = await clearMatchSetsNoDrop(sets, {r:r2,c:c2}); if(sc>0) applyScore(sc); }
       await wait(320);
-      await activateItem(itemCell.r, itemCell.c, itemCell.type, 'drag');
+      await activateItem(itemCell.r, itemCell.c, itemCell.type, 'drag', true);
+      await wait(200);
+      await dropAndRefill();
+      const sets2 = findMatchSets();
+      if(sets2.length>0) await processMatches(sets2, null);
       consumeMoveAndContinue();
     });
     return;
@@ -1297,6 +1378,31 @@ function spawnCoordFor(set, userTile){
 }
 
 /* ---------- 매치 처리 파이프라인 ---------- */
+// 낙하 없이 매치 소멸 + 아이템 생성만 수행 (아이템 스왑 시나리오에서 사용 - 요청2)
+async function clearMatchSetsNoDrop(sets, userTile){
+  let clearedThisPass=[]; const spawns=[];
+  sets.forEach(set=>{
+    const itemType = decideItemForSet(set);
+    const spot = spawnCoordFor(set, userTile);
+    set.coords.forEach(([r,c])=>{
+      if(itemType && r===spot.r && c===spot.c) return;
+      clearedThisPass.push([r,c]);
+    });
+    if(itemType) spawns.push({r:spot.r, c:spot.c, type:itemType});
+  });
+  await animateClear(clearedThisPass);
+  let itemScore = 0;
+  spawns.forEach(s=>{
+    removeBlockAt(s.r,s.c,true);
+    const nb = createBlockEl(s.r,s.c,s.type,true,true);
+    grid[s.r][s.c]=nb;
+    spawnItemBirthFx(s.r,s.c,s.type);
+    itemScore += ITEM_SCORE[s.type] || 0;
+  });
+  clearedThisPass.forEach(([r,c])=>{ if(!spawns.some(s=>s.r===r&&s.c===c)) removeBlockAt(r,c,true); });
+  if(spawns.length>0) playSfx('itemBirth'); else if(clearedThisPass.length>0) playSfx('match');
+  return clearedThisPass.length*BLOCK_SCORE + itemScore;
+}
 function processMatches(sets, userTile){
   return new Promise(async (resolve)=>{
     let totalCleared=0, comboCount=0, premium=false;
@@ -1369,6 +1475,8 @@ function animateClear(coords){
 
 function dropAndRefill(){
   return new Promise(resolve=>{
+    const moves = []; // {el, fromRow, toRow, col, isNew}
+    let maxDist = 1;
     for(let c=0;c<COLS;c++){
       let writeR = ROWS-1;
       for(let r=ROWS-1;r>=0;r--){
@@ -1376,8 +1484,10 @@ function dropAndRefill(){
           if(r!==writeR){
             const cell = grid[r][c];
             grid[writeR][c]=cell; grid[r][c]=null;
+            const dist = writeR-r;
+            moves.push({el:cell.el, toRow:writeR, col:c, dist, isNew:false});
             cell.r=writeR;
-            cell.el.style.top = px(writeR)+'px';
+            maxDist = Math.max(maxDist, dist);
           }
           writeR--;
         }
@@ -1385,24 +1495,53 @@ function dropAndRefill(){
       for(let r=writeR; r>=0; r--){
         const t = randomBlockType();
         const nb = createBlockEl(r,c,t,false,false);
-        nb.el.style.top = px(r - (writeR+1))+'px'; // 위에서 시작
+        const startRow = r-(writeR+1); // 보드 위쪽 바깥에서 시작
+        const dist = r-startRow;
+        nb.el.style.transition = 'none';
+        nb.el.style.top = px(startRow)+'px';
         nb.el.style.left = px(c)+'px';
         grid[r][c]=nb;
-        requestAnimationFrame(()=>{ nb.el.style.top = px(r)+'px'; });
+        moves.push({el:nb.el, toRow:r, col:c, dist, isNew:true});
+        maxDist = Math.max(maxDist, dist);
       }
     }
-    setTimeout(resolve, 260);
+    // 기존 블록들도 트랜지션을 잠깐 끄고 현재 위치를 그대로 유지시켜, 모든 블록이 같은 타이밍에 함께 출발하도록 동기화
+    moves.forEach(m=>{ if(!m.isNew) m.el.style.transition = 'none'; });
+    // 강제 리플로우로 위 스타일을 확정시킨 뒤, 다음 프레임에 한번에 낙하시킨다 (위 블록이 아래 블록을 추월하지 않도록 이동거리에 비례한 속도 적용)
+    void boardEl.offsetHeight;
+    requestAnimationFrame(()=>{
+      moves.forEach(m=>{
+        const dur = Math.min(0.55, Math.max(0.16, m.dist*0.085));
+        m.el.style.transition = `top ${dur}s cubic-bezier(.35,.05,.65,1), left .18s ease`;
+        m.el.style.top = px(m.toRow)+'px';
+      });
+    });
+    const totalDur = Math.min(0.55, Math.max(0.16, maxDist*0.085));
+    setTimeout(()=>{
+      moves.forEach(m=>{ m.el.style.transition = ''; }); // 다음 스왑 애니메이션이 기본 속도를 쓰도록 정리
+      resolve();
+    }, totalDur*1000 + 90);
   });
 }
 
 /* ---------- 아이템 발동 ---------- */
+let claimedTrackerTargets = new Set(); // 같은 처리 배치 내에서 먼저 발동한 IT03가 타깃을 선점 (요청1)
 function pickTrackerTarget(er,ec){
   const cand=[];
-  for(let rr=0;rr<ROWS;rr++)for(let cc=0;cc<COLS;cc++){ if(!(rr===er&&cc===ec) && grid[rr][cc]) cand.push([rr,cc]); }
+  for(let rr=0;rr<ROWS;rr++)for(let cc=0;cc<COLS;cc++){
+    const key = rr+'_'+cc;
+    if(!(rr===er&&cc===ec) && grid[rr][cc] && !claimedTrackerTargets.has(key)) cand.push([rr,cc]);
+  }
+  if(!cand.length){
+    // 선점되지 않은 타깃이 없다면 선점 여부를 무시하고 재탐색
+    for(let rr=0;rr<ROWS;rr++)for(let cc=0;cc<COLS;cc++){ if(!(rr===er&&cc===ec) && grid[rr][cc]) cand.push([rr,cc]); }
+  }
   if(!cand.length) return null;
-  return cand[Math.floor(Math.random()*cand.length)];
+  const pick = cand[Math.floor(Math.random()*cand.length)];
+  claimedTrackerTargets.add(pick[0]+'_'+pick[1]);
+  return pick;
 }
-function activateItem(r,c,type,mode){
+function activateItem(r,c,type,mode,deferDrop){
   return new Promise(async resolve=>{
     removeBlockAt(r,c,true);
     spawnItemActivateFx(r,c,type);
@@ -1453,10 +1592,12 @@ function activateItem(r,c,type,mode){
       await clearTargetsSequential(targets, 10, 'it05');
     }
 
-    await dropAndRefill();
-    // 폭포 후 자동매치 처리
-    const sets = findMatchSets();
-    if(sets.length>0) await processMatches(sets, null);
+    if(!deferDrop){
+      await dropAndRefill();
+      // 폭포 후 자동매치 처리
+      const sets = findMatchSets();
+      if(sets.length>0) await processMatches(sets, null);
+    }
     resolve();
   });
 }
@@ -1529,17 +1670,14 @@ async function convertAndMassActivate(r,c,newItemType){
   });
   if(converted.length>0) playSfx('itemBirth');
   await wait(420 + Math.min(converted.length,20)*35);
-  // 2단계: 변환된 아이템들을 한번에(동시) 발동
-  let allTargets=[];
-  converted.forEach(ct=>{
-    spawnItemActivateFx(ct.r,ct.c,ct.type);
-    allTargets.push(...targetsForItemType(ct.r,ct.c,ct.type));
-    allTargets.push([ct.r,ct.c]);
-  });
-  allTargets = allTargets.filter((v,i,a)=> a.findIndex(x=>x[0]===v[0]&&x[1]===v[1])===i);
-  await animateClear(allTargets);
-  allTargets.forEach(([rr,cc])=>{ if(grid[rr][cc]) removeBlockAt(rr,cc,true); });
-  playSfx('combo');
+  // 2단계: 변환된 아이템들을 순서대로(짧은 간격으로 거의 동시처럼) 각자의 고유 능력으로 발동.
+  // activateItem을 그대로 재사용하므로, 발동 도중 다른 변환 아이템이 스플래시로 영향을 받아도
+  // clearTargetsSequential의 연쇄 로직을 통해 자기 자신의 능력이 온전히 발동된다.
+  for(const ct of converted){
+    if(!grid[ct.r][ct.c] || !grid[ct.r][ct.c].isItem) continue; // 이미 다른 아이템의 연쇄로 발동/소멸됨
+    await activateItem(ct.r, ct.c, ct.type, 'chain', true); // deferDrop=true: 낙하는 전부 끝난 뒤 한번에
+    await wait(90);
+  }
   return converted.length;
 }
 // 조합 발동 전, 두 아이템이 하나로 "합쳐지는" 연출
@@ -1662,7 +1800,7 @@ function applyScore(amount){
   } else {
     game.opTurnScore += amount;
   }
-  updateScoreHUD();
+  updateTurnScorePopup();
   if(amount>=1000) triggerSpeech(game.turn, 'bigscore');
 }
 function floatScoreText(coord, amount){
@@ -1863,10 +2001,23 @@ function endTurn(){
   // 점수 계산 규칙: 턴 종료 > 목표점수에서 차감 > 플레이어 점수에 합산
   const turnScore = finishedSide==='me' ? game.myTurnScore : game.opTurnScore;
   if(turnScore>0){
+    // 젤리 위에 쌓여있던 점수를 해당 캐릭터쪽으로 날려보내는 연출
+    turnScorePopupEl.classList.add(finishedSide==='me' ? 'fly-left' : 'fly-right');
+    setTimeout(()=>{
+      turnScorePopupEl.classList.remove('show','fly-left','fly-right');
+      turnScorePopupEl.style.transform = 'translate(-50%,0) scale(0)';
+      turnScorePopupEl.textContent='+0';
+    }, 750);
+    const totalEl = finishedSide==='me' ? myTotalScoreEl : opTotalScoreEl;
+    setTimeout(()=>{
+      totalEl.classList.add('bump');
+      setTimeout(()=> totalEl.classList.remove('bump'), 500);
+    }, 500);
+
     game.targetScore -= turnScore;
     if(finishedSide==='me'){ game.myTotalScore += turnScore; game.myTurnScore = 0; }
     else{ game.opTotalScore += turnScore; game.opTurnScore = 0; }
-    updateScoreHUD();
+    setTimeout(updateScoreHUD, 550); // 날아가는 연출이 도착하는 타이밍에 맞춰 누적 숫자 갱신
   }
   if(game.targetScore<=0){
     finishGame(finishedSide==='me'); // 목표점수를 0으로 만든 쪽이 승리
@@ -1955,6 +2106,7 @@ async function runOpponentTurn(){
   if(game.movesLeft<=0){ game.busy=false; endTurn(); return; }
   await ensurePlayableBoard();
   if(game.ended) return;
+  claimedTrackerTargets.clear();
   // 아이템 우선 사용
   let itemCell=null;
   outer:
