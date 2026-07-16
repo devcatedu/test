@@ -1048,9 +1048,9 @@ function updateTurnScorePopup(){
   const size = Math.min(30, 15 + Math.floor(cur/2000));
   turnScorePopupEl.style.fontSize = size+'px';
   turnScorePopupEl.style.color = cur>=5000 ? '#ffd23a' : '#fff';
+  turnScorePopupEl.classList.remove('fly-left','fly-right');
+  turnScorePopupEl.style.transform = ''; // 이전에 남아있던 인라인 transform을 지워 .show 클래스의 스타일이 정상 적용되게 함
   turnScorePopupEl.classList.add('show');
-  turnScorePopupEl.classList.remove('flying');
-  turnScorePopupEl.style.left='50%'; turnScorePopupEl.style.top='-6px';
 }
 
 async function initGame(){
@@ -1062,7 +1062,7 @@ async function initGame(){
   document.getElementById('opCharFigure').className = 'char-stage-figure right idle';
   updateScoreHUD();
   turnScorePopupEl.classList.remove('show','fly-left','fly-right');
-  turnScorePopupEl.style.transform = 'translate(-50%,0) scale(0)';
+  turnScorePopupEl.style.transform = '';
   turnScorePopupEl.textContent='+0';
   roundNumEl.textContent='1';
   updateMoveDots();
@@ -1195,8 +1195,10 @@ function attemptSwap(r1,c1,r2,c2){
 
   // 아이템끼리 스왑 -> 조합 발동
   if(a.isItem && b.isItem){
-    swapCells(r1,c1,r2,c2, false).then(async ()=>{
-      await wait(200);
+    claimedTrackerTargets.clear();
+    mergeItemsVisual(r1,c1,r2,c2).then(async ()=>{
+      removeBlockAt(r1,c1,true);
+      removeBlockAt(r2,c2,true);
       activateCombo(r2,c2, a.type, b.type).then(()=> consumeMoveAndContinue());
     });
     return;
@@ -1257,6 +1259,17 @@ function swapCells(r1,c1,r2,c2, instant){
     b.el.style.left = px(c1)+'px'; b.el.style.top = px(r1)+'px';
     a.el.style.left = px(c2)+'px'; a.el.style.top = px(r2)+'px';
     setTimeout(resolve, instant?0:190);
+  });
+}
+// 아이템끼리 만났을 때: 자리를 맞바꾸는 대신 두 아이템이 서로에게 다가가 겹쳐지는 "합체" 연출
+// (그리드 좌표는 건드리지 않고 시각적 위치만 이동시킨다 - 실제 소멸/발동은 이후 activateCombo에서 처리)
+function mergeItemsVisual(r1,c1,r2,c2){
+  return new Promise(resolve=>{
+    const a = grid[r1][c1], b = grid[r2][c2];
+    const midLeft = px((c1+c2)/2)+'px', midTop = px((r1+r2)/2)+'px';
+    if(a){ a.el.style.zIndex = 12; a.el.style.left = midLeft; a.el.style.top = midTop; }
+    if(b){ b.el.style.zIndex = 11; b.el.style.left = midLeft; b.el.style.top = midTop; }
+    setTimeout(resolve, 260);
   });
 }
 
@@ -1616,9 +1629,11 @@ async function clearTargetsSequential(targets, staggerMs, sourceType){
   plainTargets.forEach(([rr,cc])=> removeBlockAt(rr,cc,true));
   if(plainTargets.length>0) applyScore(plainTargets.length*BLOCK_SCORE);
   // 연쇄 아이템은 하나씩 순서대로 발동 (동시 발동 금지 - 보드 정지 유지)
+  // deferDrop을 그대로 물려주어, 상위 흐름이 낙하를 보류 중이면 연쇄된 아이템도 낙하 없이 처리되게 한다.
   for(const ci of chainItems){
+    if(!grid[ci.r][ci.c] || !grid[ci.r][ci.c].isItem) continue; // 먼저 처리된 다른 연쇄로 이미 사라졌을 수 있음
     await wait(120);
-    await activateItem(ci.r, ci.c, ci.type, 'chain');
+    await activateItem(ci.r, ci.c, ci.type, 'chain', true);
   }
 }
 function neighborsOf(r,c){
@@ -2005,7 +2020,7 @@ function endTurn(){
     turnScorePopupEl.classList.add(finishedSide==='me' ? 'fly-left' : 'fly-right');
     setTimeout(()=>{
       turnScorePopupEl.classList.remove('show','fly-left','fly-right');
-      turnScorePopupEl.style.transform = 'translate(-50%,0) scale(0)';
+      turnScorePopupEl.style.transform = '';
       turnScorePopupEl.textContent='+0';
     }, 750);
     const totalEl = finishedSide==='me' ? myTotalScoreEl : opTotalScoreEl;
