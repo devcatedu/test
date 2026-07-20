@@ -1108,7 +1108,8 @@ async function initGame(){
   document.getElementById('howtoBanner').classList.remove('show');
   [mySpeechEl, opSpeechEl].forEach(el=>{ if(el){ clearTimeout(el._hideTimer); el.classList.remove('show'); } });
   boardEl.innerHTML='';
-  game = { turn:'me', round:1, movesLeft:3, timer:15, timerHandle:null, targetScore:TARGET_SCORE_MAX, myTurnScore:0, opTurnScore:0, myTotalScore:0, opTotalScore:0, busy:false, lastUserActionTile:null, lastSwappedBlockType:null, ended:false };
+  game = { turn:'me', round:1, movesLeft:3, timer:15, timerHandle:null, targetScore:TARGET_SCORE_MAX, myTurnScore:0, opTurnScore:0, myTotalScore:0, opTotalScore:0, busy:false, lastUserActionTile:null, lastSwappedBlockType:null, ended:false,
+    turnCounter:0, bounds:{top:0,bottom:ROWS-1,left:0,right:COLS-1} };
   const diffRoll = Math.random();
   game.aiDifficulty = diffRoll<0.34 ? 'easy' : (diffRoll<0.67 ? 'medium' : 'hard');
   const diffLabel = { easy:'쉬움', medium:'보통', hard:'어려움' }[game.aiDifficulty];
@@ -1595,9 +1596,10 @@ function dropAndRefill(){
   return new Promise(resolve=>{
     const moves = []; // {el, fromRow, toRow, col, isNew}
     let maxDist = 1;
-    for(let c=0;c<COLS;c++){
-      let writeR = ROWS-1;
-      for(let r=ROWS-1;r>=0;r--){
+    const B = game.bounds || {top:0,bottom:ROWS-1,left:0,right:COLS-1};
+    for(let c=B.left;c<=B.right;c++){
+      let writeR = B.bottom;
+      for(let r=B.bottom;r>=B.top;r--){
         if(grid[r][c]){
           if(r!==writeR){
             const cell = grid[r][c];
@@ -1610,10 +1612,10 @@ function dropAndRefill(){
           writeR--;
         }
       }
-      for(let r=writeR; r>=0; r--){
+      for(let r=writeR; r>=B.top; r--){
         const t = randomBlockType();
         const nb = createBlockEl(r,c,t,false,false);
-        const startRow = r-(writeR+1); // 보드 위쪽 바깥에서 시작
+        const startRow = r-(writeR+1-B.top); // 축소된 보드 위쪽 바깥에서 시작
         const dist = r-startRow;
         nb.el.style.transition = 'none';
         nb.el.style.top = px(startRow)+'px';
@@ -2230,6 +2232,11 @@ async function endTurn(){
     return;
   }
 
+  await shrinkBoardIfNeeded();
+  if(isStaleSession(mySession)) return;
+  await ensurePlayableBoard(); // 축소로 인해 매치 가능한 수가 없어졌다면 재배치
+  if(isStaleSession(mySession)) return;
+
   if(game.turn==='me'){
     game.turn='op';
     game.movesLeft=3; updateMoveDots();
@@ -2324,8 +2331,43 @@ function boardHasAnyMove(){
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){ if(grid[r][c] && grid[r][c].isItem) return true; } // 아이템은 항상 사용 가능한 수
   return !!findAnyValidSwap();
 }
+// 10턴이 지나면 매 턴마다 무작위 방향(상/하/좌/우)의 가장자리 한 줄을 제거해 판이 점점 좁아지다가
+// 3x3이 되면 더 이상 줄어들지 않는다.
+async function shrinkBoardIfNeeded(){
+  game.turnCounter = (game.turnCounter||0) + 1;
+  if(game.turnCounter <= 10) return;
+  const B = game.bounds;
+  const h = B.bottom-B.top+1, w = B.right-B.left+1;
+  if(h<=3 && w<=3) return; // 이미 3x3
+  const options = [];
+  if(h>3){ options.push('top'); options.push('bottom'); }
+  if(w>3){ options.push('left'); options.push('right'); }
+  if(!options.length) return;
+  const dir = options[Math.floor(Math.random()*options.length)];
+  const cellsToKill = [];
+  let dirLabel = '';
+  if(dir==='top'){ for(let c=B.left;c<=B.right;c++) cellsToKill.push([B.top,c]); dirLabel='위쪽'; B.top++; }
+  else if(dir==='bottom'){ for(let c=B.left;c<=B.right;c++) cellsToKill.push([B.bottom,c]); dirLabel='아래쪽'; B.bottom--; }
+  else if(dir==='left'){ for(let r=B.top;r<=B.bottom;r++) cellsToKill.push([r,B.left]); dirLabel='왼쪽'; B.left++; }
+  else { for(let r=B.top;r<=B.bottom;r++) cellsToKill.push([r,B.right]); dirLabel='오른쪽'; B.right--; }
+
+  const banner = document.getElementById('reshuffleBanner');
+  banner.textContent = `퍼즐판이 ${dirLabel}부터 좁아집니다!`;
+  banner.classList.add('show');
+  stageShake();
+  cellsToKill.forEach(([r,c])=>{
+    if(grid[r][c]){
+      spawnFxBurst(r,c,'#ff5c5c');
+      grid[r][c].el.classList.add('matched');
+      removeBlockAt(r,c,false);
+    }
+  });
+  await wait(500);
+  banner.classList.remove('show');
+}
 async function reshuffleBoard(){
   const banner = document.getElementById('reshuffleBanner');
+  banner.textContent = '가능한 매치가 없어 블록을 다시 섞습니다...';
   banner.classList.add('show');
   await wait(900);
   // 기존 아이템은 유지하고, 일반 블록만 무작위로 재배치 (매치가 즉시 발생하지 않고, 최소 1개의 유효한 수가 나올 때까지 반복)
