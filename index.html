@@ -192,7 +192,7 @@ html,body{
 .turn-label{ font-size:12px; color:#9fb0ff; font-weight:800; letter-spacing:1px;}
 .round-label{ font-size:15px; font-weight:900; color:#fff;}
 
-.play-info-bar{ width:690px; display:flex; align-items:center; gap:14px; margin:6px 0 10px;}
+.play-info-bar{ width:690px; display:flex; align-items:center; gap:14px; margin:6px 0 34px;}
 .timer-wrap{ flex:1; height:16px; background:rgba(0,0,0,.4); border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,.15);}
 .timer-fill{ height:100%; width:100%; background:linear-gradient(90deg,#5cf0c0,#4a7bff); transition: width 1s linear;}
 .move-wrap{ display:flex; align-items:center; gap:6px; font-weight:900; font-size:14px; color:#ffd27a;}
@@ -227,14 +227,21 @@ html,body{
 .char-score.bump{ animation: char-score-bump .5s ease; }
 @keyframes char-score-bump{ 0%{transform:scale(1);} 40%{transform:scale(1.35); color:#fff;} 100%{transform:scale(1);} }
 .turn-score-popup{
-  position:absolute; top:-6px; left:50%; transform:translate(-50%,0) scale(0);
-  font-weight:900; color:#fff; text-shadow:0 2px 6px rgba(0,0,0,.5); white-space:nowrap;
-  font-size:15px; opacity:0; transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .2s ease, font-size .3s ease;
+  min-height:60px; display:flex; align-items:flex-end; justify-content:center;
+  transform: scale(0); transform-origin:center bottom;
+  font-weight:900; white-space:nowrap; font-size:50px; letter-spacing:.5px;
+  background: linear-gradient(180deg,#fff9e0 0%, #ffe08a 40%, #ffb02e 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  -webkit-text-stroke: 3px #7a4600;
+  filter: drop-shadow(0 5px 10px rgba(0,0,0,.6)) drop-shadow(0 0 22px rgba(255,176,46,.65));
+  opacity:0; transition: transform .4s cubic-bezier(.34,1.56,.64,1), opacity .2s ease;
   z-index:16; pointer-events:none;
 }
-.turn-score-popup.show{ opacity:1; transform:translate(-50%,0) scale(1); }
-.turn-score-popup.fly-left{ transition: transform .7s cubic-bezier(.5,0,.75,1), opacity .55s ease .3s; transform: translate(calc(-50% - 250px), 30px) scale(.55); opacity:0; }
-.turn-score-popup.fly-right{ transition: transform .7s cubic-bezier(.5,0,.75,1), opacity .55s ease .3s; transform: translate(calc(-50% + 250px), 30px) scale(.55); opacity:0; }
+.turn-score-popup.show{ opacity:1; }
+.turn-score-popup.bump{ animation: turn-popup-bump .4s ease; }
+@keyframes turn-popup-bump{ 0%{} 45%{ filter: drop-shadow(0 5px 10px rgba(0,0,0,.6)) drop-shadow(0 0 34px rgba(255,220,120,.95)); } 100%{} }
+.turn-score-popup.fly-left{ transition: transform .7s cubic-bezier(.5,0,.75,1), opacity .55s ease .3s; transform: translate(-230px, 20px) scale(.35); opacity:0; }
+.turn-score-popup.fly-right{ transition: transform .7s cubic-bezier(.5,0,.75,1), opacity .55s ease .3s; transform: translate(230px, 20px) scale(.35); opacity:0; }
 .speech-bubble{
   position:absolute; top:-6px; left:50%; transform:translate(-50%,-100%) scale(.85);
   background:#fff; color:#2c1c04; font-size:12px; font-weight:800; padding:6px 10px; border-radius:12px;
@@ -254,7 +261,16 @@ html,body{
 #board{
   position:relative; width:648px; height:648px; background:rgba(0,0,0,.35); border-radius:16px;
   border:2px solid rgba(255,255,255,.1); overflow:hidden;
+  transition: filter .3s ease;
 }
+#board.opponent-turn{ filter:brightness(.55) saturate(.7); }
+.board-lock-overlay{
+  position:absolute; inset:0; z-index:15; border-radius:16px; pointer-events:none;
+  background:rgba(0,0,0,0); opacity:0; transition:opacity .3s ease;
+  display:flex; align-items:center; justify-content:center;
+}
+.board-lock-overlay.show{ opacity:1; background:rgba(0,0,0,.28); }
+.board-lock-overlay .lock-icon{ font-size:34px; opacity:.85; filter:drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
 .cell-bg{ position:absolute; width:72px; height:72px; }
 .block{
   position:absolute; width:72px; height:72px; display:flex; align-items:center; justify-content:center;
@@ -292,12 +308,23 @@ html,body{
 @keyframes float-up{ 0%{ transform:translateY(0); opacity:1;} 100%{ transform:translateY(-60px); opacity:0;} }
 
 .combo-banner{
-  position:absolute; top:40%; left:50%; transform:translate(-50%,-50%) scale(.6); z-index:40;
-  font-size:44px; font-weight:900; color:#fff; text-shadow: 0 0 20px #ffb02e, 0 4px 10px rgba(0,0,0,.6);
-  opacity:0; pointer-events:none;
+  position:absolute; top:38%; left:50%; transform:translate(-50%,-50%) scale(.6) rotate(-4deg); z-index:40;
+  font-size:64px; font-weight:900; font-style:italic; letter-spacing:1px;
+  background: linear-gradient(180deg,#fff6d0 0%, #ffd23a 35%, #ff8f1f 70%, #ff5c1f 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  -webkit-text-stroke: 2px #7a2e00;
+  filter: drop-shadow(0 0 18px rgba(255,176,46,.85)) drop-shadow(0 6px 10px rgba(0,0,0,.6));
+  opacity:0; pointer-events:none; white-space:nowrap;
 }
-.combo-banner.show{ animation: combo-pop .8s ease forwards; }
-@keyframes combo-pop{ 0%{opacity:0; transform:translate(-50%,-50%) scale(.4);} 25%{opacity:1; transform:translate(-50%,-50%) scale(1.15);} 40%{transform:translate(-50%,-50%) scale(1);} 80%{opacity:1;} 100%{opacity:0; transform:translate(-50%,-50%) scale(1);} }
+.combo-banner.show{ animation: combo-pop .9s cubic-bezier(.34,1.56,.64,1) forwards; }
+@keyframes combo-pop{
+  0%{opacity:0; transform:translate(-50%,-50%) scale(.3) rotate(-10deg);}
+  20%{opacity:1; transform:translate(-50%,-50%) scale(1.3) rotate(4deg);}
+  35%{transform:translate(-50%,-50%) scale(1.05) rotate(-2deg);}
+  50%{transform:translate(-50%,-50%) scale(1.15) rotate(1deg);}
+  85%{opacity:1; transform:translate(-50%,-50%) scale(1.1) rotate(-1deg);}
+  100%{opacity:0; transform:translate(-50%,-50%) scale(1.2) rotate(0deg);}
+}
 
 .turn-banner{
   position:absolute; top:44%; left:50%; transform:translate(-50%,-50%); z-index:50;
@@ -336,6 +363,14 @@ html,body{
   font-size:16px; font-weight:800; color:#fff; opacity:0; pointer-events:none;
 }
 .reshuffle-banner.show{ opacity:1; transition:opacity .3s ease; }
+
+.howto-banner{
+  position:absolute; left:50%; top:52%; transform:translate(-50%,-50%) scale(.9); z-index:70;
+  background:linear-gradient(180deg,#2c355c,#1a2036); border:2px solid #ffb02e; border-radius:18px; padding:20px 28px;
+  font-size:18px; font-weight:800; color:#fff; opacity:0; pointer-events:none; text-align:center; white-space:nowrap;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+}
+.howto-banner.show{ opacity:1; transform:translate(-50%,-50%) scale(1); transition:opacity .35s ease, transform .35s cubic-bezier(.34,1.56,.64,1); }
 
 /* ===================== RESULT ===================== */
 #scene-result{ align-items:center; justify-content:center; text-align:center; }
@@ -476,7 +511,7 @@ html,body{
           <div class="turn-score-popup" id="turnScorePopup">0</div>
           <div class="food-bowl" id="foodBowl">🍮</div>
           <div class="target-score-label">남은 목표점수</div>
-          <div class="target-score-num" id="targetScoreNum">1,000,000</div>
+          <div class="target-score-num" id="targetScoreNum">120,000</div>
           <div class="target-bar-bg"><div class="target-bar-fill" id="targetBarFill"></div></div>
         </div>
         <div class="char-col" id="opCharCol">
@@ -488,8 +523,10 @@ html,body{
         </div>
       </div>
       <div class="reshuffle-banner" id="reshuffleBanner">가능한 매치가 없어 블록을 다시 섞습니다...</div>
+      <div class="howto-banner" id="howtoBanner">🍮 목표 점수를 빨리 가져가 먼저 0으로 만드세요!</div>
       <div id="board-wrap">
         <div id="board"></div>
+        <div class="board-lock-overlay" id="boardLockOverlay"><span class="lock-icon">🔒</span></div>
         <div class="fx-layer" id="fxLayer"></div>
         <div class="combo-banner" id="comboBanner"></div>
         <div class="turn-banner" id="turnBanner"></div>
@@ -965,7 +1002,7 @@ const ITEM_TYPES = {
 };
 
 // ---- 점수 데이터 (첨부 스펙 그대로 적용) ----
-const TARGET_SCORE_MAX = 1000000;
+const TARGET_SCORE_MAX = 120000;
 const BLOCK_SCORE = 50; // 블록 파괴 1개당 점수 (bl01~bl05 공통)
 const ITEM_SCORE = { it01:400, it02:400, it03:300, it04:600, it05:1000 }; // 생성된 아이템 아이디 점수
 const COMBO_SCORE = { // 조합 아이디의 점수
@@ -985,6 +1022,9 @@ const COMBO_SCORE = { // 조합 아이디의 점수
 };
 
 let grid; // grid[r][c] = {type:'bl01'/'itXX', isItem:bool, el:domNode, r,c}
+let gameSessionId = 0; // initGame()이 호출될 때마다 증가. 이전 게임에서 진행 중이던 비동기 작업(타이머 대기 등)이
+// 재시작/게임오버 이후까지 살아남아 새 게임에 영향을 주는 것을 막기 위한 세션 토큰.
+function isStaleSession(id){ return id !== gameSessionId; }
 let cellPositions = []; // px
 
 let game = {
@@ -1045,19 +1085,35 @@ function updateScoreHUD(){
 function updateTurnScorePopup(){
   const cur = game.turn==='me' ? game.myTurnScore : game.opTurnScore;
   turnScorePopupEl.textContent = '+'+cur.toLocaleString();
-  const size = Math.min(30, 15 + Math.floor(cur/2000));
-  turnScorePopupEl.style.fontSize = size+'px';
-  turnScorePopupEl.style.color = cur>=5000 ? '#ffd23a' : '#fff';
+  // 누적 점수가 클수록 최대 3배까지 점점 더 커지는 화려한 성장 효과
+  const growth = Math.min(3, 1 + (cur/15000)*2);
   turnScorePopupEl.classList.remove('fly-left','fly-right');
-  turnScorePopupEl.style.transform = ''; // 이전에 남아있던 인라인 transform을 지워 .show 클래스의 스타일이 정상 적용되게 함
+  turnScorePopupEl.style.transform = `scale(${growth})`;
   turnScorePopupEl.classList.add('show');
+  turnScorePopupEl.classList.remove('bump'); void turnScorePopupEl.offsetWidth;
+  turnScorePopupEl.classList.add('bump');
 }
 
 async function initGame(){
+  gameSessionId++; // 새 세션 시작 - 이전 세션에서 대기 중이던 비동기 작업들은 이후 이 값과 비교해 스스로 중단됨
+  if(game && game.timerHandle) clearInterval(game.timerHandle); // 혹시 남아있을 이전 게임의 인터벌을 확실히 정리
+  clearInterval(charChatterTimer); charChatterTimer = null;
+  clearInterval(ambientChatTimer); ambientChatTimer = null;
+  claimedTrackerTargets.clear();
+  protectedCellKeys.clear();
+  fxLayer.innerHTML=''; // 이전 게임에서 남아있을 수 있는 연출 잔재 제거
+  comboBanner.classList.remove('show');
+  turnBanner.classList.remove('show');
+  document.getElementById('reshuffleBanner').classList.remove('show');
+  document.getElementById('howtoBanner').classList.remove('show');
+  [mySpeechEl, opSpeechEl].forEach(el=>{ if(el){ clearTimeout(el._hideTimer); el.classList.remove('show'); } });
   boardEl.innerHTML='';
-  game = { turn:'me', round:1, movesLeft:3, timer:15, timerHandle:null, targetScore:TARGET_SCORE_MAX, myTurnScore:0, opTurnScore:0, myTotalScore:0, opTotalScore:0, busy:false, lastUserActionTile:null, ended:false };
+  game = { turn:'me', round:1, movesLeft:3, timer:15, timerHandle:null, targetScore:TARGET_SCORE_MAX, myTurnScore:0, opTurnScore:0, myTotalScore:0, opTotalScore:0, busy:false, lastUserActionTile:null, lastSwappedBlockType:null, ended:false };
+  const diffRoll = Math.random();
+  game.aiDifficulty = diffRoll<0.34 ? 'easy' : (diffRoll<0.67 ? 'medium' : 'hard');
+  const diffLabel = { easy:'쉬움', medium:'보통', hard:'어려움' }[game.aiDifficulty];
   document.getElementById('myCharName').textContent = USER.name;
-  document.getElementById('opCharName').textContent = currentChannel==='beginner' ? '초급냥이' : '중급냥이';
+  document.getElementById('opCharName').textContent = (currentChannel==='beginner' ? '초급냥이' : '중급냥이') + ` (${diffLabel})`;
   document.getElementById('myCharFigure').className = 'char-stage-figure left idle';
   document.getElementById('opCharFigure').className = 'char-stage-figure right idle';
   updateScoreHUD();
@@ -1079,7 +1135,11 @@ async function initGame(){
     }
   }
   await ensurePlayableBoard();
+  updateBoardLockUI();
   showTurnBanner('MY TURN');
+  const howtoBanner = document.getElementById('howtoBanner');
+  howtoBanner.classList.add('show');
+  setTimeout(()=> howtoBanner.classList.remove('show'), 2600);
   startTimer();
 }
 
@@ -1176,11 +1236,12 @@ function handleTapCell(r,c){
     return;
   }
   lastTapCell = null;
+  const mySession = gameSessionId;
   game.busy = true;
   game.lastUserActionTile = {r,c};
   claimedTrackerTargets.clear();
   activateItem(r,c, cell.type, 'tap').then(()=>{
-    consumeMoveAndContinue();
+    if(!isStaleSession(mySession)) consumeMoveAndContinue();
   });
 }
 
@@ -1189,17 +1250,20 @@ function attemptSwap(r1,c1,r2,c2){
   if(game.busy) return;
   const a = grid[r1][c1], b = grid[r2][c2];
   if(!a||!b) return;
+  const mySession = gameSessionId;
   game.busy = true;
   game.lastUserActionTile = {r:r2,c:c2};
+  game.lastSwappedBlockType = null;
   claimedTrackerTargets.clear();
 
   // 아이템끼리 스왑 -> 조합 발동
   if(a.isItem && b.isItem){
     claimedTrackerTargets.clear();
     mergeItemsVisual(r1,c1,r2,c2).then(async ()=>{
+      if(isStaleSession(mySession)) return;
       removeBlockAt(r1,c1,true);
       removeBlockAt(r2,c2,true);
-      activateCombo(r2,c2, a.type, b.type).then(()=> consumeMoveAndContinue());
+      activateCombo(r2,c2, a.type, b.type).then(()=>{ if(!isStaleSession(mySession)) consumeMoveAndContinue(); });
     });
     return;
   }
@@ -1207,45 +1271,72 @@ function attemptSwap(r1,c1,r2,c2){
   // 잠시 여백을 두고 아이템을 발동(역시 낙하 없이)한 다음, 모든 처리가 끝난 후 한번에 낙하시킨다 (요청2)
   if(a.isItem && !b.isItem){
     swapCells(r1,c1,r2,c2, false).then(async ()=>{
+      if(isStaleSession(mySession)) return;
       const itemCell = grid[r2][c2]; // 스왑된 아이템 셀 참조 (이후 낙하로 위치가 바뀌어도 항상 최신 좌표 유지)
+      game.lastSwappedBlockType = b.type; // it05가 드래그로 발동될 때 정확히 이 블록과 같은 종류를 파괴하도록 (요청8)
       await wait(280);
+      if(isStaleSession(mySession)) return;
       const sets = findMatchSets();
-      if(sets.length>0){ const sc = await clearMatchSetsNoDrop(sets, {r:r1,c:c1}); if(sc>0) applyScore(sc); }
+      if(sets.length>0){
+        const result = await clearMatchSetsNoDrop(sets, {r:r1,c:c1});
+        if(isStaleSession(mySession)) return;
+        if(result.score>0) applyScore(result.score);
+        result.spawned.forEach(s=> protectedCellKeys.add(s.r+'_'+s.c)); // 방금 생성된 아이템은 이번 발동에서 보호 (요청10)
+      }
       await wait(320);
+      if(isStaleSession(mySession)) return;
+      claimedTrackerTargets.clear();
       await activateItem(itemCell.r, itemCell.c, itemCell.type, 'drag', true);
+      if(isStaleSession(mySession)) return;
+      protectedCellKeys.clear();
       await wait(200);
+      if(isStaleSession(mySession)) return;
       await dropAndRefill();
       const sets2 = findMatchSets();
       if(sets2.length>0) await processMatches(sets2, null);
-      consumeMoveAndContinue();
+      if(!isStaleSession(mySession)) consumeMoveAndContinue();
     });
     return;
   }
   if(b.isItem && !a.isItem){
     swapCells(r1,c1,r2,c2, false).then(async ()=>{
+      if(isStaleSession(mySession)) return;
       const itemCell = grid[r1][c1];
+      game.lastSwappedBlockType = a.type; // 요청8
       await wait(280);
+      if(isStaleSession(mySession)) return;
       const sets = findMatchSets();
-      if(sets.length>0){ const sc = await clearMatchSetsNoDrop(sets, {r:r2,c:c2}); if(sc>0) applyScore(sc); }
+      if(sets.length>0){
+        const result = await clearMatchSetsNoDrop(sets, {r:r2,c:c2});
+        if(isStaleSession(mySession)) return;
+        if(result.score>0) applyScore(result.score);
+        result.spawned.forEach(s=> protectedCellKeys.add(s.r+'_'+s.c)); // 요청10
+      }
       await wait(320);
+      if(isStaleSession(mySession)) return;
+      claimedTrackerTargets.clear();
       await activateItem(itemCell.r, itemCell.c, itemCell.type, 'drag', true);
+      if(isStaleSession(mySession)) return;
+      protectedCellKeys.clear();
       await wait(200);
+      if(isStaleSession(mySession)) return;
       await dropAndRefill();
       const sets2 = findMatchSets();
       if(sets2.length>0) await processMatches(sets2, null);
-      consumeMoveAndContinue();
+      if(!isStaleSession(mySession)) consumeMoveAndContinue();
     });
     return;
   }
 
   swapCells(r1,c1,r2,c2,false).then(()=>{
+    if(isStaleSession(mySession)) return;
     const sets = findMatchSets();
     if(sets.length===0){
       // 매치 실패 -> 원위치
       swapCells(r1,c1,r2,c2,false).then(()=>{ game.busy=false; });
     } else {
-      processMatches(sets, {r:r2,c:c2}).then(()=>{
-        consumeMoveAndContinue();
+      processMatches(sets, [{r:r2,c:c2},{r:r1,c:c1}]).then(()=>{
+        if(!isStaleSession(mySession)) consumeMoveAndContinue();
       });
     }
   });
@@ -1261,14 +1352,13 @@ function swapCells(r1,c1,r2,c2, instant){
     setTimeout(resolve, instant?0:190);
   });
 }
-// 아이템끼리 만났을 때: 자리를 맞바꾸는 대신 두 아이템이 서로에게 다가가 겹쳐지는 "합체" 연출
-// (그리드 좌표는 건드리지 않고 시각적 위치만 이동시킨다 - 실제 소멸/발동은 이후 activateCombo에서 처리)
+// 아이템끼리 만났을 때: 대상(target)은 제자리에 그대로 두고, 내가 드래그한 아이템(dragged)만 대상 쪽으로 이동해 겹쳐진다.
 function mergeItemsVisual(r1,c1,r2,c2){
   return new Promise(resolve=>{
-    const a = grid[r1][c1], b = grid[r2][c2];
-    const midLeft = px((c1+c2)/2)+'px', midTop = px((r1+r2)/2)+'px';
-    if(a){ a.el.style.zIndex = 12; a.el.style.left = midLeft; a.el.style.top = midTop; }
-    if(b){ b.el.style.zIndex = 11; b.el.style.left = midLeft; b.el.style.top = midTop; }
+    const dragged = grid[r1][c1]; // 유저가 직접 드래그를 시작한 칸의 아이템
+    const target = grid[r2][c2];  // 스왑 대상 (제자리 유지)
+    if(dragged){ dragged.el.style.zIndex = 12; dragged.el.style.left = px(c2)+'px'; dragged.el.style.top = px(r2)+'px'; }
+    if(target){ target.el.style.zIndex = 11; }
     setTimeout(resolve, 260);
   });
 }
@@ -1353,6 +1443,11 @@ function findMatchSets(){
           if(s.coords.some(([rr,cc])=> coords.some(([r2,c2])=> rr===r2&&cc===c2))){
             coords.forEach(cd=>{ if(!s.coords.some(([r2,c2])=> r2===cd[0]&&c2===cd[1])) s.coords.push(cd); });
             s.isSquare = true;
+            // 병합 후 형태 통계를 다시 계산해야 아이템 생성 위치/종류가 어긋나지 않는다 (요청2 버그 수정)
+            const nByRow={}, nByCol={};
+            s.coords.forEach(([rr,cc])=>{ nByRow[rr]=(nByRow[rr]||0)+1; nByCol[cc]=(nByCol[cc]||0)+1; });
+            s.maxRowLen = Math.max(...Object.values(nByRow));
+            s.maxColLen = Math.max(...Object.values(nByCol));
             merged = true;
           }
         });
@@ -1373,20 +1468,30 @@ function decideItemForSet(set){
   return null;
 }
 function spawnCoordFor(set, userTile){
-  if(userTile && set.coords.some(([r,c])=> r===userTile.r && c===userTile.c)) return userTile;
-  // 교차 타일 탐색
+  // 최우선순위: 매치를 만든 스왑 타일. 여러 후보(예: 스왑된 두 칸)를 우선순위 배열로 받을 수 있음.
+  const candidates = Array.isArray(userTile) ? userTile : (userTile ? [userTile] : []);
+  for(const cand of candidates){
+    if(cand && set.coords.some(([r,c])=> r===cand.r && c===cand.c)) return cand;
+  }
+  // 2순위: 교차 타일 탐색
   const byRow={}, byCol={};
   set.coords.forEach(([r,c])=>{ (byRow[r]=byRow[r]||[]).push(c); (byCol[c]=byCol[c]||[]).push(r); });
   for(const [r,c] of set.coords){
     if((byRow[r]||[]).length>=3 && (byCol[c]||[]).length>=3) return {r,c};
   }
-  // 중심점
+  // 3순위: 중심점 (짝수 개수라 정확한 중앙이 없으면 더 오른쪽/아래쪽 좌표를 우선)
   const rs = set.coords.map(x=>x[0]), cs = set.coords.map(x=>x[1]);
-  const cr = Math.round(rs.reduce((a,b)=>a+b,0)/rs.length);
-  const cc = Math.round(cs.reduce((a,b)=>a+b,0)/cs.length);
-  // 가장 가까운 실제 좌표
+  const cr = (rs.reduce((a,b)=>a+b,0))/rs.length;
+  const cc = (cs.reduce((a,b)=>a+b,0))/cs.length;
   let best=set.coords[0], bd=1e9;
-  set.coords.forEach(([r,c])=>{ const d=Math.abs(r-cr)+Math.abs(c-cc); if(d<bd){bd=d; best=[r,c];} });
+  set.coords.forEach(([r,c])=>{
+    const d=Math.abs(r-cr)+Math.abs(c-cc);
+    if(d<bd-1e-9){ bd=d; best=[r,c]; }
+    else if(Math.abs(d-bd)<1e-9){
+      // 거리 동률이면 더 오른쪽(c가 큰), 그 다음 더 아래쪽(r이 큰) 좌표를 선택
+      if(c>best[1] || (c===best[1] && r>best[0])){ best=[r,c]; }
+    }
+  });
   return {r:best[0], c:best[1]};
 }
 
@@ -1414,18 +1519,21 @@ async function clearMatchSetsNoDrop(sets, userTile){
   });
   clearedThisPass.forEach(([r,c])=>{ if(!spawns.some(s=>s.r===r&&s.c===c)) removeBlockAt(r,c,true); });
   if(spawns.length>0) playSfx('itemBirth'); else if(clearedThisPass.length>0) playSfx('match');
-  return clearedThisPass.length*BLOCK_SCORE + itemScore;
+  return { score: clearedThisPass.length*BLOCK_SCORE + itemScore, spawned: spawns.map(s=>({r:s.r,c:s.c})) };
 }
 function processMatches(sets, userTile){
   return new Promise(async (resolve)=>{
-    let totalCleared=0, comboCount=0, premium=false;
+    let comboCount=0, premium=false;
     let firstPass = true;
     let pendingUserTile = userTile;
     while(true){
       const curSets = firstPass ? sets : findMatchSets();
       firstPass = false;
       if(!curSets || curSets.length===0) break;
-      comboCount++;
+      const comboStart = comboCount + 1;
+      comboCount += curSets.length; // 한 화면에 매치 결과가 여러 개면 그 개수만큼 콤보로 집계
+      // 파괴 자체는 한번에 처리하되, 콤보 숫자만 1→2→3 단계적으로 보이도록 별도로(파괴 연출과 병렬로) 진행 (요청1)
+      stepComboBanner(comboStart, comboCount);
       let clearedThisPass=[];
       const spawns = [];
       curSets.forEach(set=>{
@@ -1440,8 +1548,6 @@ function processMatches(sets, userTile){
       });
       pendingUserTile = null;
       await animateClear(clearedThisPass);
-      totalCleared += clearedThisPass.length;
-      // 아이템 스폰 (좌표 위치를 아이템으로 교체) - 파괴 애니메이션이 끝난 뒤에만 생성
       let passItemScore = 0;
       spawns.forEach(s=>{
         removeBlockAt(s.r,s.c,true);
@@ -1452,13 +1558,12 @@ function processMatches(sets, userTile){
       });
       clearedThisPass.forEach(([r,c])=>{ if(!spawns.some(s=>s.r===r&&s.c===c)) removeBlockAt(r,c,true); });
       if(spawns.length>0) playSfx('itemBirth'); else if(clearedThisPass.length>0) playSfx('match');
-      // 점수 처리: 블록 파괴 1개당 점수 + 생성된 아이템 아이디 점수
-      const passScore = clearedThisPass.length*BLOCK_SCORE + passItemScore;
+      // 점수 처리: (블록 파괴 1개당 점수 + 생성된 아이템 아이디 점수) * 콤보 수 (요청7)
+      const passScore = (clearedThisPass.length*BLOCK_SCORE + passItemScore) * comboCount;
       if(passScore>0){ applyScore(passScore); floatScoreText(clearedThisPass[0], passScore); }
       // 파괴와 아이템 변환이 완전히 마무리된 뒤에만 낙하를 시작한다 (요청: 즉시 낙하 금지)
-      await wait(220);
+      await wait(spawns.length>0 ? 480 : 220);
       await dropAndRefill();
-      if(comboCount>=2) showComboBanner(comboCount);
     }
     if(premium) triggerPremiumFx();
     resolve();
@@ -1539,15 +1644,16 @@ function dropAndRefill(){
 
 /* ---------- 아이템 발동 ---------- */
 let claimedTrackerTargets = new Set(); // 같은 처리 배치 내에서 먼저 발동한 IT03가 타깃을 선점 (요청1)
+let protectedCellKeys = new Set(); // 방금 이 발동으로 새로 생성된 아이템은 같은 발동의 파괴 대상에서 제외 (요청10)
 function pickTrackerTarget(er,ec){
   const cand=[];
   for(let rr=0;rr<ROWS;rr++)for(let cc=0;cc<COLS;cc++){
     const key = rr+'_'+cc;
-    if(!(rr===er&&cc===ec) && grid[rr][cc] && !claimedTrackerTargets.has(key)) cand.push([rr,cc]);
+    if(!(rr===er&&cc===ec) && grid[rr][cc] && !claimedTrackerTargets.has(key) && !protectedCellKeys.has(key)) cand.push([rr,cc]);
   }
   if(!cand.length){
-    // 선점되지 않은 타깃이 없다면 선점 여부를 무시하고 재탐색
-    for(let rr=0;rr<ROWS;rr++)for(let cc=0;cc<COLS;cc++){ if(!(rr===er&&cc===ec) && grid[rr][cc]) cand.push([rr,cc]); }
+    // 선점되지 않은 타깃이 없다면 선점 여부를 무시하고 재탐색 (단, 보호된 셀은 계속 제외)
+    for(let rr=0;rr<ROWS;rr++)for(let cc=0;cc<COLS;cc++){ if(!(rr===er&&cc===ec) && grid[rr][cc] && !protectedCellKeys.has(rr+'_'+cc)) cand.push([rr,cc]); }
   }
   if(!cand.length) return null;
   const pick = cand[Math.floor(Math.random()*cand.length)];
@@ -1591,11 +1697,10 @@ function activateItem(r,c,type,mode,deferDrop){
       await clearTargetsSequential(targets, 20, 'it04');
     } else if(type==='it05'){ // 일괄 파괴
       let targetType;
-      if(mode==='drag' && game.lastUserActionTile){
-        const near = neighborsOf(r,c).map(([rr,cc])=>grid[rr][cc]).find(x=>x && !x.isItem);
-        targetType = near ? near.type : mostCommonType();
+      if(mode==='drag' && game.lastSwappedBlockType){
+        targetType = game.lastSwappedBlockType; // 드래그로 실제 스왑했던 블록과 같은 종류
       } else {
-        targetType = mostCommonType();
+        targetType = mostCommonType(); // 터치(제자리 발동): 가장 많은 종류 (동수면 랜덤)
       }
       const targets=[];
       for(let rr=0;rr<ROWS;rr++) for(let cc=0;cc<COLS;cc++){
@@ -1618,6 +1723,7 @@ function wait(ms){ return new Promise(res=> setTimeout(res, ms)); }
 // 파괴 대상들을 처리: 스플래시로 아이템이 섞여 있으면 먼저 소멸 애니메이션을 함께 재생하되,
 // 아이템은 소멸 후 순차적으로(하나씩) 연쇄 발동하여 보드가 "정지" 상태로 순서대로 처리되게 함.
 async function clearTargetsSequential(targets, staggerMs, sourceType){
+  targets = targets.filter(([rr,cc])=> !protectedCellKeys.has(rr+'_'+cc));
   if(!targets.length) return;
   const chainItems = [];
   targets.forEach(([rr,cc])=>{
@@ -1628,6 +1734,9 @@ async function clearTargetsSequential(targets, staggerMs, sourceType){
   await animateClear(plainTargets);
   plainTargets.forEach(([rr,cc])=> removeBlockAt(rr,cc,true));
   if(plainTargets.length>0) applyScore(plainTargets.length*BLOCK_SCORE);
+  // 보호는 "방금 생성된 아이템이 바로 그 자리에서 즉시 파괴되는 것"만 막기 위함이므로,
+  // 직접 타격 처리가 끝나면 곧바로 해제한다. 이후 연쇄 발동(추적 아이템 포함)부터는 이 아이템도 정상적으로 영향을 받는다. (요청4)
+  protectedCellKeys.clear();
   // 연쇄 아이템은 하나씩 순서대로 발동 (동시 발동 금지 - 보드 정지 유지)
   // deferDrop을 그대로 물려주어, 상위 흐름이 낙하를 보류 중이면 연쇄된 아이템도 낙하 없이 처리되게 한다.
   for(const ci of chainItems){
@@ -1644,9 +1753,11 @@ function neighborsOf(r,c){
 function mostCommonType(){
   const cnt={};
   for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){ const cell=grid[r][c]; if(cell&&!cell.isItem) cnt[cell.type]=(cnt[cell.type]||0)+1; }
-  let best=BLOCK_TYPES[0], bv=-1;
-  Object.keys(cnt).forEach(k=>{ if(cnt[k]>bv){ bv=cnt[k]; best=k; } });
-  return best;
+  let bv=-1;
+  Object.values(cnt).forEach(v=>{ if(v>bv) bv=v; });
+  const tied = Object.keys(cnt).filter(k=>cnt[k]===bv);
+  if(tied.length===0) return BLOCK_TYPES[0];
+  return tied[Math.floor(Math.random()*tied.length)]; // 개수가 동일하면 랜덤 선택
 }
 
 /* ---------- 아이템 조합 ---------- */
@@ -1713,50 +1824,82 @@ async function playComboMergeFx(r,c,typeA,typeB){
   spawnFxBurst(r,c,'#ffe08a');
   await wait(160);
 }
+// IT03 조합 전용 헬퍼: 해당 위치에서 십자 파괴
+async function crossExplodeAt(r,c,color){
+  const targets=[];
+  for(let rr=0;rr<ROWS;rr++) targets.push([rr,c]);
+  for(let cc=0;cc<COLS;cc++) targets.push([r,cc]);
+  spawnFxLineV(c,color||'#4ad2ff'); spawnFxLineH(r,color||'#4ad2ff');
+  await clearTargetsSequential(targets, 0, 'it03cross');
+}
+// IT03 조합 전용 헬퍼: 단순 추적미사일 - 날아간 자리에서 십자 등으로 재폭발하지 않고 그 블록(또는 아이템이면 연쇄)만 파괴
+async function fireSimpleMissiles(originR, originC, count){
+  for(let i=0;i<count;i++){
+    const t = pickTrackerTarget(originR, originC);
+    if(!t) continue;
+    spawnFxTracker(originR, originC, t[0], t[1]);
+    await wait(200);
+    await clearTargetsSequential([t], 0, 'it03missile');
+  }
+}
 function activateCombo(r,c,typeA,typeB){
   return new Promise(async resolve=>{
     const key = [typeA,typeB].sort().join('+');
-    const comboScore = COMBO_SCORE[key] || 0;
+    const comboScore = COMBO_SCORE[key] || 1600;
     showComboBanner('ITEM COMBO!');
     await playComboMergeFx(r,c,typeA,typeB);
     stageShake();
     let targets=[];
-    if(key==='it01+it01'){
-      for(let rr=0; rr<ROWS; rr++) for(let cc=c-1;cc<=c+1;cc++) if(cc>=0&&cc<COLS) targets.push([rr,cc]);
-    } else if(key==='it01+it02'){
+    if(key==='it01+it01'){ // 0101: 십자 파괴
       for(let rr=0;rr<ROWS;rr++) targets.push([rr,c]);
       for(let cc=0;cc<COLS;cc++) targets.push([r,cc]);
-    } else if(key==='it02+it02'){
-      for(let cc=0;cc<COLS;cc++) for(let rr=r-1;rr<=r+1;rr++) if(rr>=0&&rr<ROWS) targets.push([rr,cc]);
-    } else if(key==='it01+it03'){
+      spawnFxLineV(c,'#ffd23a'); spawnFxLineH(r,'#ffd23a');
+    } else if(key==='it01+it02'){ // 0102: 십자 파괴
+      for(let rr=0;rr<ROWS;rr++) targets.push([rr,c]);
+      for(let cc=0;cc<COLS;cc++) targets.push([r,cc]);
+      spawnFxLineV(c,'#ffd23a'); spawnFxLineH(r,'#4ad2ff');
+    } else if(key==='it02+it02'){ // 0202: 십자 파괴
+      for(let rr=0;rr<ROWS;rr++) targets.push([rr,c]);
+      for(let cc=0;cc<COLS;cc++) targets.push([r,cc]);
+      spawnFxLineV(c,'#4ad2ff'); spawnFxLineH(r,'#4ad2ff');
+    } else if(key==='it01+it03'){ // Mit04
       const t = randomCoordExcept(r,c); removeBlockAt(r,c,true); applyScore(comboScore); playSfx('combo');
-      if(t) await activateItem(t[0],t[1],'it01','chain');
+      if(t) await activateItem(t[0],t[1],'it01','chain',true);
       await wait(220); await dropAndRefill();
       const sets0 = findMatchSets(); if(sets0.length>0) await processMatches(sets0, null);
       resolve(); return;
-    } else if(key==='it02+it03'){
+    } else if(key==='it02+it03'){ // Mit05
       const t = randomCoordExcept(r,c); removeBlockAt(r,c,true); applyScore(comboScore); playSfx('combo');
-      if(t) await activateItem(t[0],t[1],'it02','chain');
+      if(t) await activateItem(t[0],t[1],'it02','chain',true);
       await wait(220); await dropAndRefill();
       const sets0 = findMatchSets(); if(sets0.length>0) await processMatches(sets0, null);
       resolve(); return;
-    } else if(key==='it03+it04'){
-      const t = randomCoordExcept(r,c); removeBlockAt(r,c,true); applyScore(comboScore); playSfx('combo');
-      if(t) await activateItem(t[0],t[1],'it04','chain');
-      await wait(220); await dropAndRefill();
-      const sets0 = findMatchSets(); if(sets0.length>0) await processMatches(sets0, null);
-      resolve(); return;
-    } else if(key==='it03+it03'){
-      const t1=randomCoordExcept(r,c); const t2=randomCoordExcept(r,c);
+    } else if(key==='it03+it04'){ // Mit06: 십자 파괴 후 랜덤 위치로 날아가 IT04(범위파괴) 발동
       removeBlockAt(r,c,true); applyScore(comboScore); playSfx('combo');
-      if(t1) await activateItem(t1[0],t1[1],'it03','chain');
-      if(t2) await activateItem(t2[0],t2[1],'it03','chain');
+      await crossExplodeAt(r,c,'#ff8f4a');
+      await wait(150);
+      const t = randomCoordExcept(r,c);
+      if(t){ spawnFxTracker(r,c,t[0],t[1]); await wait(220); await activateItem(t[0],t[1],'it04','chain',true); }
       await wait(220); await dropAndRefill();
       const sets0 = findMatchSets(); if(sets0.length>0) await processMatches(sets0, null);
       resolve(); return;
-    } else if(key==='it04+it04'){
+    } else if(key==='it03+it03'){ // Mit07: 십자 파괴 후 단순 추적미사일 3개 발사(도착지에서 재폭발 없이 그냥 파괴)
+      removeBlockAt(r,c,true); applyScore(comboScore); playSfx('combo');
+      await crossExplodeAt(r,c);
+      await wait(150);
+      await fireSimpleMissiles(r,c,3);
+      await wait(220); await dropAndRefill();
+      const sets0 = findMatchSets(); if(sets0.length>0) await processMatches(sets0, null);
+      resolve(); return;
+    } else if(key==='it04+it04'){ // Mit08: 주변 2칸 범위
       for(let dr=-2;dr<=2;dr++) for(let dc=-2;dc<=2;dc++){ const rr=r+dr,cc=c+dc; if(rr>=0&&rr<ROWS&&cc>=0&&cc<COLS) targets.push([rr,cc]); }
-      stageShake();
+      spawnFxRing(r,c,'#ff5c5c'); spawnFxRing(r,c,'#ff8f1f');
+    } else if(key==='it01+it04'){ // 스펙 외 조합: IT01 방향(세로줄) 기준 3줄 파괴
+      for(let cc=c-1; cc<=c+1; cc++) if(cc>=0&&cc<COLS) for(let rr=0;rr<ROWS;rr++) targets.push([rr,cc]);
+      spawnFxLineV(Math.max(0,c-1),'#ffd23a'); spawnFxLineV(c,'#ffd23a'); spawnFxLineV(Math.min(COLS-1,c+1),'#ffd23a');
+    } else if(key==='it02+it04'){ // 스펙 외 조합: IT02 방향(가로줄) 기준 3줄 파괴
+      for(let rr=r-1; rr<=r+1; rr++) if(rr>=0&&rr<ROWS) for(let cc=0;cc<COLS;cc++) targets.push([rr,cc]);
+      spawnFxLineH(Math.max(0,r-1),'#4ad2ff'); spawnFxLineH(r,'#4ad2ff'); spawnFxLineH(Math.min(ROWS-1,r+1),'#4ad2ff');
     } else if(key==='it05+it05'){ // Mit09
       for(let rr=0;rr<ROWS;rr++) for(let cc=0;cc<COLS;cc++) if(grid[rr][cc] && !grid[rr][cc].isItem) targets.push([rr,cc]);
       spawnFxFlash(r,c,true,'#c98bff'); stageShake();
@@ -1782,9 +1925,15 @@ function activateCombo(r,c,typeA,typeB){
       const sets0 = findMatchSets(); if(sets0.length>0) await processMatches(sets0, null);
       resolve(); return;
     } else {
-      // 기본값: 두 아이템을 각각 순차 발동 (정의되지 않은 조합)
+      // 정의되지 않은 그 외 조합: 두 아이템의 효과를 순서대로 온전히 발동
       removeBlockAt(r,c,true);
-      await activateItem(r,c,typeA,'chain');
+      await activateItem(r,c,typeA,'chain',true);
+      await wait(180);
+      const t2 = randomCoordExcept(r,c);
+      if(t2) await activateItem(t2[0],t2[1],typeB,'chain',true);
+      applyScore(comboScore);
+      await wait(220); await dropAndRefill();
+      const sets0 = findMatchSets(); if(sets0.length>0) await processMatches(sets0, null);
       resolve(); return;
     }
     removeBlockAt(r,c,true);
@@ -1901,10 +2050,23 @@ function spawnFxFlash(r,c, big, color){
 }
 const ITEM_FX_COLOR = { it01:'#ffd23a', it02:'#4ad2ff', it03:'#7dffb0', it04:'#ff5c5c', it05:'#c98bff' };
 function spawnItemBirthFx(r,c,type){
-  // 아이템이 생성될 때(매치 완성 시) 종류별 색상의 반짝임 연출
+  // 아이템이 생성될 때(매치 완성 시) 종류별 색상의 반짝임 연출 - 캐스케이드 중에도 놓치지 않도록 강화
   const color = ITEM_FX_COLOR[type] || '#fff';
   spawnFxRing(r,c,color);
+  spawnFxRing(r,c,color);
   spawnFxBurst(r,c,color);
+  spawnFxFlash(r,c,false,color);
+  // "아이템 생성!" 라벨을 짧게 띄워 캐스케이드 중에도 확실히 인지되게 함
+  const label = document.createElement('div');
+  label.textContent = (ITEM_TYPES[type]?ITEM_TYPES[type].name:'') + ' 생성!';
+  label.style.position='absolute';
+  label.style.left = px(c)+'px'; label.style.top = (px(r)-6)+'px'; label.style.width='72px';
+  label.style.textAlign='center'; label.style.fontSize='12px'; label.style.fontWeight='900';
+  label.style.color = color; label.style.textShadow='0 2px 4px rgba(0,0,0,.8)';
+  label.style.zIndex = 32; label.style.pointerEvents='none';
+  fxLayer.appendChild(label);
+  label.animate([{transform:'translateY(0)', opacity:0},{transform:'translateY(-4px)',opacity:1,offset:.2},{transform:'translateY(-22px)', opacity:1, offset:.75},{transform:'translateY(-30px)', opacity:0}], {duration:900, easing:'ease-out'});
+  setTimeout(()=> label.remove(), 920);
   playSfx('itemSpawn');
 }
 function spawnItemActivateFx(r,c,type){
@@ -1927,6 +2089,18 @@ function showComboBanner(n){
   comboBanner.classList.remove('show'); void comboBanner.offsetWidth;
   comboBanner.classList.add('show');
   playSfx('combo');
+}
+// 실제 블록 파괴는 한번에 처리되지만, 콤보 숫자만 fromN->toN까지 1씩 눈에 보이게 올라가도록 함 (요청1)
+// 파괴/낙하 흐름을 막지 않도록 await 하지 않고 병렬로 흘러가는 fire-and-forget 방식.
+function stepComboBanner(fromN, toN){
+  let n = Math.max(2, fromN);
+  if(n>toN) return;
+  const tick = ()=>{
+    showComboBanner(n);
+    n++;
+    if(n<=toN) setTimeout(tick, 160);
+  };
+  tick();
 }
 function showTurnBanner(text){
   turnBanner.textContent = text;
@@ -1955,8 +2129,10 @@ function startTimer(){
   }, 1000);
 }
 async function consumeMoveAndContinue(){
+  const mySession = gameSessionId;
   game.busy = true;
   await ensurePlayableBoard();
+  if(isStaleSession(mySession)) return; // 그 사이 게임이 재시작/종료되었다면 여기서 중단
   game.movesLeft -= 1;
   updateMoveDots();
   game.busy = false;
@@ -2006,8 +2182,14 @@ function startCharChatter(){
   }, 6000+Math.random()*4000);
 }
 function stopCharChatter(){ if(charChatterTimer){ clearInterval(charChatterTimer); charChatterTimer=null; } }
-function endTurn(){
+function updateBoardLockUI(){
+  const locked = game.turn!=='me';
+  boardEl.classList.toggle('opponent-turn', locked);
+  document.getElementById('boardLockOverlay').classList.toggle('show', locked);
+}
+async function endTurn(){
   if(game.ended) return;
+  const mySession = gameSessionId;
   clearInterval(game.timerHandle);
   game.busy = true;
   const finishedSide = game.turn;
@@ -2017,14 +2199,18 @@ function endTurn(){
   const turnScore = finishedSide==='me' ? game.myTurnScore : game.opTurnScore;
   if(turnScore>0){
     // 젤리 위에 쌓여있던 점수를 해당 캐릭터쪽으로 날려보내는 연출
+    turnScorePopupEl.style.transform = ''; // 이전 인라인 scale이 fly 클래스의 transform을 가리지 않도록 제거
+    void turnScorePopupEl.offsetWidth; // 리플로우를 강제해 transition이 새로 걸리도록 함
     turnScorePopupEl.classList.add(finishedSide==='me' ? 'fly-left' : 'fly-right');
     setTimeout(()=>{
+      if(isStaleSession(mySession)) return;
       turnScorePopupEl.classList.remove('show','fly-left','fly-right');
       turnScorePopupEl.style.transform = '';
       turnScorePopupEl.textContent='+0';
     }, 750);
     const totalEl = finishedSide==='me' ? myTotalScoreEl : opTotalScoreEl;
     setTimeout(()=>{
+      if(isStaleSession(mySession)) return;
       totalEl.classList.add('bump');
       setTimeout(()=> totalEl.classList.remove('bump'), 500);
     }, 500);
@@ -2032,7 +2218,7 @@ function endTurn(){
     game.targetScore -= turnScore;
     if(finishedSide==='me'){ game.myTotalScore += turnScore; game.myTurnScore = 0; }
     else{ game.opTotalScore += turnScore; game.opTurnScore = 0; }
-    setTimeout(updateScoreHUD, 550); // 날아가는 연출이 도착하는 타이밍에 맞춰 누적 숫자 갱신
+    setTimeout(()=>{ if(!isStaleSession(mySession)) updateScoreHUD(); }, 550); // 날아가는 연출이 도착하는 타이밍에 맞춰 누적 숫자 갱신
   }
   if(game.targetScore<=0){
     finishGame(finishedSide==='me'); // 목표점수를 0으로 만든 쪽이 승리
@@ -2043,23 +2229,73 @@ function endTurn(){
     game.turn='op';
     game.movesLeft=3; updateMoveDots();
     turnLabel.textContent='OPPONENT TURN';
+    updateBoardLockUI();
+    await wait(650); // 턴이 끝난 후 바로 전환되지 않도록 여백 (요청5)
+    if(isStaleSession(mySession)) return;
     showTurnBanner('OPPONENT TURN');
     triggerSpeech('op','turnstart');
-    setTimeout(runOpponentTurn, 900);
+    await wait(1050); // 알림이 보이는 동안은 타이머가 돌지 않음
+    if(isStaleSession(mySession)) return;
+    runOpponentTurn();
   } else {
     game.turn='me';
     game.round += 1;
     roundNumEl.textContent = game.round;
     game.movesLeft=3; updateMoveDots();
     turnLabel.textContent='MY TURN';
+    updateBoardLockUI();
+    await wait(650);
+    if(isStaleSession(mySession)) return;
     showTurnBanner('MY TURN');
     triggerSpeech('me','turnstart');
+    await wait(1050);
+    if(isStaleSession(mySession)) return;
     game.busy=false;
     startTimer();
   }
 }
 
 /* ---------- 간단 AI (상대 턴 자동 플레이) ---------- */
+// ---- AI 보조 함수: 인접한 아이템 쌍(조합 가능)을 찾음 ----
+function findAdjacentItemPair(){
+  const found=[];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    if(!grid[r][c] || !grid[r][c].isItem) continue;
+    if(c+1<COLS && grid[r][c+1] && grid[r][c+1].isItem) found.push({r,c,nr:r,nc:c+1});
+    if(r+1<ROWS && grid[r+1][c] && grid[r+1][c].isItem) found.push({r,c,nr:r+1,nc:c});
+  }
+  if(!found.length) return null;
+  return found[Math.floor(Math.random()*found.length)];
+}
+// ---- AI 보조 함수: 가능한 스왑들 중 더 좋은(아이템 생성 또는 더 큰 매치) 것을 우선하여 탐색 ----
+function findBestValidSwap(){
+  const candidates = [];
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      if(!grid[r][c] || grid[r][c].isItem) continue;
+      const options = [[r,c+1],[r+1,c]];
+      for(const [nr,nc] of options){
+        if(nr>=ROWS||nc>=COLS) continue;
+        if(!grid[nr][nc] || grid[nr][nc].isItem) continue;
+        const tmp = grid[r][c].type;
+        grid[r][c].type = grid[nr][nc].type; grid[nr][nc].type = tmp;
+        const sets = findMatchSets();
+        const tmp2 = grid[r][c].type; grid[r][c].type = grid[nr][nc].type; grid[nr][nc].type = tmp2;
+        if(sets.length===0) continue;
+        let score = 0, makesItem = false;
+        sets.forEach(s=>{
+          score += s.coords.length;
+          if(decideItemForSet(s)) makesItem = true;
+        });
+        if(makesItem) score += 100; // 아이템을 만드는 수를 강하게 우대
+        candidates.push({r,c,nr,nc,score});
+      }
+    }
+  }
+  if(!candidates.length) return null;
+  candidates.sort((a,b)=> b.score-a.score);
+  return candidates[0];
+}
 function findAnyValidSwap(){
   for(let r=0;r<ROWS;r++){
     for(let c=0;c<COLS;c++){
@@ -2118,32 +2354,62 @@ async function ensurePlayableBoard(){
 }
 async function runOpponentTurn(){
   if(game.ended) return;
+  const mySession = gameSessionId;
   if(game.movesLeft<=0){ game.busy=false; endTurn(); return; }
   await ensurePlayableBoard();
-  if(game.ended) return;
+  if(game.ended || isStaleSession(mySession)) return;
   claimedTrackerTargets.clear();
-  // 아이템 우선 사용
-  let itemCell=null;
-  outer:
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){ if(grid[r][c] && grid[r][c].isItem){ itemCell={r,c}; break outer; } }
-  if(itemCell && Math.random()<0.5){
-    game.lastUserActionTile = itemCell;
-    activateItem(itemCell.r,itemCell.c, grid[itemCell.r][itemCell.c].type, 'tap').then(()=>{
+
+  const diff = game.aiDifficulty || 'medium';
+  const CFG = {
+    easy:   { comboSeek:0.10, itemUse:0.20, smartSwap:false },
+    medium: { comboSeek:0.45, itemUse:0.40, smartSwap:false },
+    hard:   { comboSeek:0.90, itemUse:0.55, smartSwap:true  },
+  }[diff];
+
+  // 1) 난이도가 높을수록 인접한 아이템끼리 적극적으로 조합을 노림
+  const itemPair = findAdjacentItemPair();
+  if(itemPair && Math.random()<CFG.comboSeek){
+    const {r,c,nr,nc} = itemPair;
+    const typeA = grid[r][c].type, typeB = grid[nr][nc].type;
+    game.lastUserActionTile = {r:nr,c:nc};
+    mergeItemsVisual(r,c,nr,nc).then(async ()=>{
+      if(isStaleSession(mySession)) return;
+      removeBlockAt(r,c,true);
+      removeBlockAt(nr,nc,true);
+      await activateCombo(nr,nc, typeA, typeB);
+      if(isStaleSession(mySession)) return;
       game.movesLeft-=1; updateMoveDots();
-      if(!game.ended) setTimeout(runOpponentTurn, 700);
+      if(!game.ended){ if(game.movesLeft<=0) endTurn(); else setTimeout(()=>{ if(!isStaleSession(mySession)) runOpponentTurn(); }, 700); }
     });
     return;
   }
-  const mv = findAnyValidSwap();
+  // 2) 아이템을 단독으로 사용
+  let itemCell=null;
+  outer:
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){ if(grid[r][c] && grid[r][c].isItem){ itemCell={r,c}; break outer; } }
+  if(itemCell && Math.random()<CFG.itemUse){
+    game.lastUserActionTile = itemCell;
+    activateItem(itemCell.r,itemCell.c, grid[itemCell.r][itemCell.c].type, 'tap').then(()=>{
+      if(isStaleSession(mySession)) return;
+      game.movesLeft-=1; updateMoveDots();
+      if(!game.ended) setTimeout(()=>{ if(!isStaleSession(mySession)) runOpponentTurn(); }, 700);
+    });
+    return;
+  }
+  // 3) 일반 매치: 어려움 난이도는 아이템을 만들거나 더 큰 매치를 우선 선택
+  const mv = CFG.smartSwap ? (findBestValidSwap() || findAnyValidSwap()) : findAnyValidSwap();
   if(!mv){ endTurn(); return; }
   game.lastUserActionTile = {r:mv.nr,c:mv.nc};
   swapCells(mv.r,mv.c,mv.nr,mv.nc,false).then(()=>{
+    if(isStaleSession(mySession)) return;
     const sets = findMatchSets();
     processMatches(sets, {r:mv.nr,c:mv.nc}).then(()=>{
+      if(isStaleSession(mySession)) return;
       game.movesLeft -= 1; updateMoveDots();
       if(game.ended) return;
       if(game.movesLeft<=0){ endTurn(); }
-      else setTimeout(runOpponentTurn, 700);
+      else setTimeout(()=>{ if(!isStaleSession(mySession)) runOpponentTurn(); }, 700);
     });
   });
 }
@@ -2164,9 +2430,10 @@ function finishGame(win){
   setTimeout(()=>{
     const badge = document.getElementById('resultBadge');
     const sub = document.getElementById('resultSub');
+    const winnerName = win ? USER.name : (document.getElementById('opCharName').textContent || '상대');
     badge.textContent = win? 'WIN!' : 'LOSE...';
     badge.className = 'result-badge '+(win?'win':'lose');
-    sub.textContent = win? '축하합니다! 승리했습니다.' : '아쉽지만 패배했습니다. 다시 도전해보세요!';
+    sub.textContent = `${winnerName}님이 먼저 밥을 차지했어요!`;
     document.getElementById('resultScore').textContent = `최종 점수 ${game.myTotalScore.toLocaleString()} : ${game.opTotalScore.toLocaleString()}`;
     playSfx(win?'win':'lose');
     goScene('scene-result');
@@ -2190,6 +2457,39 @@ document.getElementById('quitConfirmBtn').addEventListener('click', ()=>{
   goScene('scene-lobby', { onShow: ()=> startBgm('lobby') });
 });
 document.getElementById('resultRetry').addEventListener('click', ()=> { playSfx('click'); goScene('scene-ingame', {onShow: ()=>{ initGame(); startBgm('ingame'); }}); });
+
+// ===== 안전망: 연출(FX) 함수는 절대 게임 로직을 멈추게 해서는 안 된다 =====
+// 연출 함수 내부에서 예기치 못한 오류가 발생하면 async 체인 전체가 조용히 중단되어
+// 캐스케이드 매치가 처리되다 말거나 아이템이 생성되지 않는 것처럼 보이는 문제가 있었다.
+// 아래 함수들은 순수 연출용이므로 오류가 나도 무시하고 게임 진행에는 영향이 없도록 감싼다.
+function wrapSafeFx(fn, name){
+  return function(...args){
+    try{ return fn.apply(this, args); }
+    catch(e){ console.warn('[FX 안전망] '+name+' 오류 무시:', e); return undefined; }
+  };
+}
+spawnFxBurst = wrapSafeFx(spawnFxBurst, 'spawnFxBurst');
+spawnFxLineV = wrapSafeFx(spawnFxLineV, 'spawnFxLineV');
+spawnFxLineH = wrapSafeFx(spawnFxLineH, 'spawnFxLineH');
+spawnFxRing = wrapSafeFx(spawnFxRing, 'spawnFxRing');
+spawnFxTracker = wrapSafeFx(spawnFxTracker, 'spawnFxTracker');
+spawnFxFlash = wrapSafeFx(spawnFxFlash, 'spawnFxFlash');
+spawnItemBirthFx = wrapSafeFx(spawnItemBirthFx, 'spawnItemBirthFx');
+spawnItemActivateFx = wrapSafeFx(spawnItemActivateFx, 'spawnItemActivateFx');
+triggerPremiumFx = wrapSafeFx(triggerPremiumFx, 'triggerPremiumFx');
+stageShake = wrapSafeFx(stageShake, 'stageShake');
+showComboBanner = wrapSafeFx(showComboBanner, 'showComboBanner');
+showTurnBanner = wrapSafeFx(showTurnBanner, 'showTurnBanner');
+floatScoreText = wrapSafeFx(floatScoreText, 'floatScoreText');
+playSfx = wrapSafeFx(playSfx, 'playSfx');
+
+// 마지막 안전망: 그래도 어딘가에서 처리되지 않은 오류가 나면 콘솔에 기록하고
+// 입력이 영구히 잠기지 않도록(게임이 멈추지 않도록) game.busy를 풀어준다.
+window.addEventListener('unhandledrejection', (ev)=>{
+  console.warn('[게임 안전망] 처리되지 않은 오류로 인해 진행을 복구합니다:', ev.reason);
+  if(typeof game!=='undefined' && game){ game.busy = false; }
+  ev.preventDefault && ev.preventDefault();
+});
 
 })();
 </script>
