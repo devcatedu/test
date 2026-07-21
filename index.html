@@ -264,6 +264,15 @@ html,body{
   transition: filter .3s ease;
 }
 #board.opponent-turn{ filter:brightness(.55) saturate(.7); }
+.board-wall{
+  position:absolute; z-index:12; pointer-events:none;
+  background:
+    repeating-linear-gradient(135deg, rgba(255,90,60,.28) 0 14px, rgba(120,20,10,.35) 14px 28px),
+    rgba(10,6,8,.55);
+  border: 2px solid rgba(255,120,90,.55);
+  box-shadow: inset 0 0 18px rgba(0,0,0,.6);
+  transition: all .5s cubic-bezier(.6,0,.4,1);
+}
 .board-lock-overlay{
   position:absolute; inset:0; z-index:15; border-radius:16px; pointer-events:none;
   background:rgba(0,0,0,0); opacity:0; transition:opacity .3s ease;
@@ -401,7 +410,7 @@ html,body{
         <svg class="title-cat-badge" viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="#ff9a3d"/><path d="M30 30 L40 10 L52 32Z" fill="#ff9a3d"/><path d="M90 30 L80 10 L68 32Z" fill="#ff9a3d"/><circle cx="42" cy="60" r="7" fill="#2c1c04"/><circle cx="78" cy="60" r="7" fill="#2c1c04"/><ellipse cx="60" cy="78" rx="9" ry="6" fill="#fff"/><path d="M52 88 Q60 94 68 88" stroke="#2c1c04" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
         <div class="title-sub">ORANGE CAT &amp; FRIENDS</div>
         <div class="title-main">귤냥이와 친구들</div>
-        <div class="title-en">THE 3MATCH PUZZLE</div>
+        <div class="title-en">THE 3MATCH PUZZLE ROYALE</div>
       </div>
       <div class="login-box" id="loginBox">
         <div class="login-row"><label>ID</label><input id="idInput" type="text" placeholder="아이디 입력"></div>
@@ -511,7 +520,7 @@ html,body{
           <div class="turn-score-popup" id="turnScorePopup">0</div>
           <div class="food-bowl" id="foodBowl">🍮</div>
           <div class="target-score-label">남은 목표점수</div>
-          <div class="target-score-num" id="targetScoreNum">120,000</div>
+          <div class="target-score-num" id="targetScoreNum">200,000</div>
           <div class="target-bar-bg"><div class="target-bar-fill" id="targetBarFill"></div></div>
         </div>
         <div class="char-col" id="opCharCol">
@@ -1002,7 +1011,7 @@ const ITEM_TYPES = {
 };
 
 // ---- 점수 데이터 (첨부 스펙 그대로 적용) ----
-const TARGET_SCORE_MAX = 120000;
+const TARGET_SCORE_MAX = 150000;
 const BLOCK_SCORE = 50; // 블록 파괴 1개당 점수 (bl01~bl05 공통)
 const ITEM_SCORE = { it01:400, it02:400, it03:300, it04:600, it05:1000 }; // 생성된 아이템 아이디 점수
 const COMBO_SCORE = { // 조합 아이디의 점수
@@ -1047,11 +1056,15 @@ function px(i){ return i*CELL; }
 // 블록이 빈칸처럼 보이는 버그가 있었음 -> 화면이 다시 보일 때 위치/내용을 강제로 재동기화한다.
 function resyncBoardVisuals(){
   if(!grid || !boardEl.isConnected) return;
+  const B = (game && game.bounds) || {top:0,bottom:ROWS-1,left:0,right:COLS-1};
   for(let r=0;r<ROWS;r++){
     for(let c=0;c<COLS;c++){
       const cell = grid[r][c];
+      const outOfBounds = r<B.top || r>B.bottom || c<B.left || c>B.right;
       if(!cell || !cell.el){
-        // 어떤 이유로든 빈칸이 되어있다면 새 블록으로 채운다 (게임 도중 정상적으로는 발생하지 않아야 함)
+        // 판 축소로 의도적으로 비어있는 칸(경계 밖)은 절대 되살리지 않는다 (요청5 버그 수정)
+        if(outOfBounds) continue;
+        // 경계 안인데 어떤 이유로든 빈칸이 되어있다면 새 블록으로 채운다 (게임 도중 정상적으로는 발생하지 않아야 함)
         if(!game.busy && !game.ended){
           const t = randomBlockType();
           const nb = createBlockEl(r,c,t,false,false);
@@ -1113,6 +1126,13 @@ async function initGame(){
   const diffRoll = Math.random();
   game.aiDifficulty = diffRoll<0.34 ? 'easy' : (diffRoll<0.67 ? 'medium' : 'hard');
   const diffLabel = { easy:'쉬움', medium:'보통', hard:'어려움' }[game.aiDifficulty];
+  ['Top','Bottom','Left','Right'].forEach(side=>{
+    const w = document.createElement('div');
+    w.className='board-wall';
+    w.id='wall'+side;
+    boardEl.appendChild(w);
+  });
+  updateBoardWalls();
   document.getElementById('myCharName').textContent = USER.name;
   document.getElementById('opCharName').textContent = (currentChannel==='beginner' ? '초급냥이' : '중급냥이') + ` (${diffLabel})`;
   document.getElementById('myCharFigure').className = 'char-stage-figure left idle';
@@ -2333,15 +2353,36 @@ function boardHasAnyMove(){
 }
 // 10턴이 지나면 매 턴마다 무작위 방향(상/하/좌/우)의 가장자리 한 줄을 제거해 판이 점점 좁아지다가
 // 3x3이 되면 더 이상 줄어들지 않는다.
+// 축소된 보드 경계(game.bounds) 밖 영역을 시각적으로 "닫힌 벽"처럼 보이게 갱신 (요청2)
+function updateBoardWalls(){
+  const B = game.bounds;
+  const wTop = document.getElementById('wallTop');
+  const wBottom = document.getElementById('wallBottom');
+  const wLeft = document.getElementById('wallLeft');
+  const wRight = document.getElementById('wallRight');
+  if(!wTop) return;
+  wTop.style.left='0px'; wTop.style.top='0px';
+  wTop.style.width = (COLS*CELL)+'px';
+  wTop.style.height = (B.top*CELL)+'px';
+  wBottom.style.left='0px'; wBottom.style.top=((B.bottom+1)*CELL)+'px';
+  wBottom.style.width = (COLS*CELL)+'px';
+  wBottom.style.height = ((ROWS-1-B.bottom)*CELL)+'px';
+  wLeft.style.left='0px'; wLeft.style.top='0px';
+  wLeft.style.width = (B.left*CELL)+'px';
+  wLeft.style.height = (ROWS*CELL)+'px';
+  wRight.style.left = ((B.right+1)*CELL)+'px'; wRight.style.top='0px';
+  wRight.style.width = ((COLS-1-B.right)*CELL)+'px';
+  wRight.style.height = (ROWS*CELL)+'px';
+}
 async function shrinkBoardIfNeeded(){
   game.turnCounter = (game.turnCounter||0) + 1;
-  if(game.turnCounter <= 10) return;
+  if(game.turnCounter <= 13) return;
   const B = game.bounds;
   const h = B.bottom-B.top+1, w = B.right-B.left+1;
-  if(h<=3 && w<=3) return; // 이미 3x3
+  if(h<=4 && w<=4) return; // 최소 4x4까지만 축소
   const options = [];
-  if(h>3){ options.push('top'); options.push('bottom'); }
-  if(w>3){ options.push('left'); options.push('right'); }
+  if(h>4){ options.push('top'); options.push('bottom'); }
+  if(w>4){ options.push('left'); options.push('right'); }
   if(!options.length) return;
   const dir = options[Math.floor(Math.random()*options.length)];
   const cellsToKill = [];
@@ -2362,7 +2403,8 @@ async function shrinkBoardIfNeeded(){
       removeBlockAt(r,c,false);
     }
   });
-  await wait(500);
+  updateBoardWalls(); // 벽이 안쪽으로 닫히는 연출 (요청2)
+  await wait(1200); // 안내가 보이는 동안 충분히 게임이 멈춰있도록 (요청1)
   banner.classList.remove('show');
 }
 async function reshuffleBoard(){
