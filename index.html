@@ -1965,7 +1965,8 @@ function activateCombo(r,c,typeA,typeB){
     }
     removeBlockAt(r,c,true);
     targets = targets.filter((v,i,a)=> a.findIndex(x=>x[0]===v[0]&&x[1]===v[1])>=0);
-    // 파괴 범위에 걸린 기존 아이템은 그냥 사라지지 않고 자신의 고유 효과가 연쇄 발동되어야 함 (요청1 버그 수정)
+    targets = targets.filter(([rr,cc])=> !protectedCellKeys.has(rr+'_'+cc)); // 방금 생성되어 보호 중인 칸은 조합 범위에서도 제외 (요청3)
+    // 파괴 범위에 걸린 기존 아이템은 그냥 사라지지 않고 자신의 고유 효과가 연쇄 발동되어야 함
     const chainItems = [];
     targets.forEach(([rr,cc])=>{
       const cell = grid[rr][cc];
@@ -2170,6 +2171,11 @@ function startTimer(){
 async function consumeMoveAndContinue(){
   const mySession = gameSessionId;
   game.busy = true;
+  // 점수 규칙: 플레이마다 남은 제한시간(초) * 10점을 추가로 획득 (내 턴일 때만 - 상대는 별도 타이머가 없음)
+  if(game.turn==='me'){
+    const timeBonus = Math.max(0, Math.floor(game.timer)) * 10;
+    if(timeBonus>0) applyScore(timeBonus);
+  }
   await ensurePlayableBoard();
   if(isStaleSession(mySession)) return; // 그 사이 게임이 재시작/종료되었다면 여기서 중단
   game.movesLeft -= 1;
@@ -2388,8 +2394,8 @@ function updateBoardWalls(){
 }
 async function shrinkBoardIfNeeded(){
   game.turnCounter = (game.turnCounter||0) + 1;
-  const scoreLow = game.targetScore <= TARGET_SCORE_MAX * 0.2;
-  if(game.turnCounter <= 14 && !scoreLow) return;
+  const scoreLow = game.targetScore <= TARGET_SCORE_MAX * 0.15;
+  if(!scoreLow) return;
   const B = game.bounds;
   const h = B.bottom-B.top+1, w = B.right-B.left+1;
   if(h<=4 && w<=4) return; // 최소 4x4까지만 축소
